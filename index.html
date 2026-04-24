@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CaseOS — Academic Research OS</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+</head>
+<body style="margin:0;padding:0">
+<div id="root"></div>
+<script type="text/babel">
+const { useState, createContext, useContext, useEffect, useRef } = React;
+
+const SUPABASE_URL = ‘https://pgoxreguplwzhhcesbza.supabase.co’;
+const SUPABASE_KEY = ‘sb_publishable_Rh1ldlYOt2DjZUxz0IDD1w_XASzR03E’;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// i18n SYSTEM (unchanged from previous)
+// ═══════════════════════════════════════════════════════════════════════════════
+const TRANSLATIONS = {
+en: {
+navigation:“Navigation”,dashboard:“Dashboard”,cases:“Cases”,activities:“Activities”,
+workspaces:“Workspaces”,aiInsights:“AI Insights”,academicNews:“Academic News”,
+modules:“Modules”,settings:“Settings”,classroom:“Classroom”,analytics:“Analytics”,
+searchPlaceholder:“Search cases, notes, researchers…”,newCase:”+ New Case”,
+dashTitle:“Research Dashboard”,dashSub:“Academic Year 2023–2024 · Spring Semester”,
+totalCases:“Total Cases”,open:“Open”,inReview:“In Review”,closed:“Closed”,
+acrossAllWs:“Across all workspaces”,activeResearch:“Active research”,
+underReview:“Under review”,completed:“Completed”,recentCases:“Recent Cases”,
+viewAll:“View all →”,recentActivity:“Recent Activity”,
+heatmapTitle:“Researcher Activity Heatmap”,thisSemester:“This semester”,
+activeWorkspaces:“Active Workspaces”,casesTitle:“Cases”,
+casesSub:“All research cases across workspaces”,filterAll:“All”,filterOpen:“Open”,
+filterReview:“In Review”,filterClosed:“Closed”,statusOpen:“Open”,
+statusReview:“In Review”,statusClosed:“Closed”,backToCases:“← Back to Cases”,
+tabOverview:“Overview”,tabNotes:“Notes”,tabBone:“🦴 Bone Analysis”,
+tabMedical:“🏥 Medical Review”,tabLiterature:“Literature”,tabTimeline:“Timeline”,
+description:“Description”,workspace:“Workspace”,fieldDiscipline:“Field / Discipline”,
+principalInvestigator:“Principal Investigator”,caseOpened:“Case Opened”,
+progress:“Progress”,status:“Status”,progressComplete:”% complete”,
+labNotes:“Lab & Field Notes”,noNotes:“No notes yet.”,statureEstimate:“Stature Estimate”,
+ageEstimate:“Age Estimate”,sexEstimation:“Sex Estimation”,confidence:“Confidence”,
+taphonomyNotes:“Taphonomy Notes”,skeletalInventory:“Skeletal Inventory”,
+traumaMarkers:“Trauma Markers”,noTrauma:“No trauma markers identified.”,
+pathologyObs:“Pathology Observations”,aiOsteologicalSummary:“🤖 AI Osteological Summary”,
+noBoneData:“🦴 No bone analysis data for this case.”,anatomyNotes:“Anatomy Notes”,
+radiology:“Radiology”,pathologyObsMed:“Pathology Observations”,
+fractureAnalysis:“Fracture & Orthopedic Analysis”,trauma:“Trauma”,
+diffDiagnosis:“Differential Diagnosis”,residentNotes:“Resident / Student Notes”,
+aiMedicalReasoning:“🤖 AI Medical Reasoning”,noMedicalData:“🏥 No medical review data for this case.”,
+caseOpenedEvent:“Case opened”,noteAdded:“Note added”,openedBy:“Opened by”,
+literatureMsg:“📚 Literature module — connect your institutional library to auto-fetch references.”,
+aiTitle:“AI Research Assistant”,aiSubtitle:“Case-specific”,osteologicalProfile:“Osteological Profile”,
+stature:“Stature”,age:“Age”,sex:“Sex”,suggestedActions:“Suggested Actions”,
+keyThemes:“Key Themes”,aiResponse:“AI Response”,
+aiPlaceholder:“Ask about methodology, findings, literature…”,askAI:“Ask AI Assistant →”,
+thinking:“Thinking…”,analyzing:“Analyzing case data…”,
+aiError:“Unable to reach AI service. Please check your connection and try again.”,
+runComparativeMorphology:“🦴 Run comparative morphology”,
+requestIsotopeAnalysis:“🧬 Request isotope analysis”,createCaseOverview:“📄 Create case overview”,
+uploadFieldData:“📊 Upload field data”,findLiterature:“📚 Find related literature”,
+generateMethodology:“✍️ Generate methodology draft”,identifyGaps:“🔍 Identify research gaps”,
+newsTitle:“Academic News Feed”,newsSub:“AI-curated publications from Nature, Science, Cell & more”,
+reads:“reads”,workspacesTitle:“Workspaces”,workspacesSub:“Departmental research environments”,
+casesSuffix:“cases”,membersSuffix:“members”,activitiesTitle:“Activities”,
+activitiesSub:“All recent actions across your workspaces”,comingSoon:“Coming Soon”,
+underDevelopment:“This section is under active development.”,language:“Language”,
+translateNote:“Translate Note”,translating:“Translating…”,translated:“Translated”,
+original:“Original”,translateUI:“Translate to”,userRole:“Forensic Anthropologist”,
+},
+tr: {
+navigation:“Navigasyon”,dashboard:“Dashboard”,cases:“Vakalar”,activities:“Aktiviteler”,
+workspaces:“Çalışma Alanları”,aiInsights:“AI Analizleri”,academicNews:“Akademik Haberler”,
+modules:“Modüller”,settings:“Ayarlar”,classroom:“Sınıf Sistemi”,analytics:“Analitik”,
+searchPlaceholder:“Vaka, not, araştırmacı ara…”,newCase:”+ Yeni Vaka”,
+dashTitle:“Araştırma Paneli”,dashSub:“Akademik Yıl 2023–2024 · Bahar Dönemi”,
+totalCases:“Toplam Vaka”,open:“Açık”,inReview:“İncelemede”,closed:“Kapalı”,
+acrossAllWs:“Tüm çalışma alanları”,activeResearch:“Aktif araştırma”,
+underReview:“İnceleme sürecinde”,completed:“Tamamlandı”,recentCases:“Son Vakalar”,
+viewAll:“Tümünü gör →”,recentActivity:“Son Aktiviteler”,
+heatmapTitle:“Araştırmacı Aktivite Haritası”,thisSemester:“Bu dönem”,
+activeWorkspaces:“Aktif Çalışma Alanları”,casesTitle:“Vakalar”,
+casesSub:“Tüm çalışma alanlarındaki araştırma vakaları”,filterAll:“Tümü”,filterOpen:“Açık”,
+filterReview:“İncelemede”,filterClosed:“Kapalı”,statusOpen:“Açık”,
+statusReview:“İncelemede”,statusClosed:“Kapalı”,backToCases:“← Vakalara Dön”,
+tabOverview:“Genel Bakış”,tabNotes:“Notlar”,tabBone:“🦴 Kemik Analizi”,
+tabMedical:“🏥 Tıbbi İnceleme”,tabLiterature:“Literatür”,tabTimeline:“Zaman Çizelgesi”,
+description:“Açıklama”,workspace:“Çalışma Alanı”,fieldDiscipline:“Alan / Disiplin”,
+principalInvestigator:“Sorumlu Araştırmacı”,caseOpened:“Vaka Açılma Tarihi”,
+progress:“İlerleme”,status:“Durum”,progressComplete:”% tamamlandı”,
+labNotes:“Lab & Saha Notları”,noNotes:“Henüz not yok.”,statureEstimate:“Boy Tahmini”,
+ageEstimate:“Yaş Tahmini”,sexEstimation:“Cinsiyet Tahmini”,confidence:“Güven”,
+taphonomyNotes:“Tafonomi Notları”,skeletalInventory:“İskelet Envanteri”,
+traumaMarkers:“Travma Belirteçleri”,noTrauma:“Travma belirteci tespit edilmedi.”,
+pathologyObs:“Patoloji Gözlemleri”,aiOsteologicalSummary:“🤖 AI Osteolojik Özet”,
+noBoneData:“🦴 Bu vaka için kemik analizi verisi bulunmuyor.”,anatomyNotes:“Anatomi Notları”,
+radiology:“Radyoloji”,pathologyObsMed:“Patoloji Gözlemleri”,
+fractureAnalysis:“Kırık & Ortopedik Analiz”,trauma:“Travma”,diffDiagnosis:“Ayırıcı Tanı”,
+residentNotes:“Asistan / Öğrenci Notları”,aiMedicalReasoning:“🤖 AI Tıbbi Yorumlama”,
+noMedicalData:“🏥 Bu vaka için tıbbi inceleme verisi bulunmuyor.”,
+caseOpenedEvent:“Vaka açıldı”,noteAdded:“Not eklendi”,openedBy:“Açan”,
+literatureMsg:“📚 Literatür modülü — kurumsal kütüphanenizi bağlayarak referansları otomatik getirin.”,
+aiTitle:“AI Araştırma Asistanı”,aiSubtitle:“Vakaya özel”,osteologicalProfile:“Osteolojik Profil”,
+stature:“Boy”,age:“Yaş”,sex:“Cinsiyet”,suggestedActions:“Önerilen İşlemler”,
+keyThemes:“Ana Temalar”,aiResponse:“AI Yanıtı”,
+aiPlaceholder:“Metodoloji, bulgular, literatür hakkında sor…”,askAI:“AI’a Sor →”,
+thinking:“Düşünüyor…”,analyzing:“Vaka verisi analiz ediliyor…”,
+aiError:“AI servisine ulaşılamıyor. Bağlantınızı kontrol edip tekrar deneyin.”,
+runComparativeMorphology:“🦴 Karşılaştırmalı morfoloji yap”,
+requestIsotopeAnalysis:“🧬 İzotop analizi iste”,createCaseOverview:“📄 Vaka özeti oluştur”,
+uploadFieldData:“📊 Saha verisi yükle”,findLiterature:“📚 İlgili literatür bul”,
+generateMethodology:“✍️ Metodoloji taslağı oluştur”,identifyGaps:“🔍 Araştırma boşluklarını belirle”,
+newsTitle:“Akademik Haber Akışı”,newsSub:“Nature, Science, Cell ve daha fazlasından AI destekli yayınlar”,
+reads:“okuma”,workspacesTitle:“Çalışma Alanları”,workspacesSub:“Departman araştırma ortamları”,
+casesSuffix:“vaka”,membersSuffix:“üye”,activitiesTitle:“Aktiviteler”,
+activitiesSub:“Çalışma alanlarındaki tüm son hareketler”,comingSoon:“Yakında”,
+underDevelopment:“Bu bölüm aktif olarak geliştiriliyor.”,language:“Dil”,
+translateNote:“Notu Çevir”,translating:“Çevriliyor…”,translated:“Çevrildi”,
+original:“Orijinal”,translateUI:“Şuna çevir”,userRole:“Adli Antropolog”,
+},
+};
+const LangCtx = createContext({ lang:“en”, t:(k)=>k });
+const useLang = () => useContext(LangCtx);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI ENGINE  (real API calls, input-driven results)
+// ═══════════════════════════════════════════════════════════════════════════════
+const callClaude = async (systemPrompt, userContent, maxTokens = 800) => {
+const res = await fetch(“https://api.anthropic.com/v1/messages”, {
+method: “POST”,
+headers: { “Content-Type”: “application/json” },
+body: JSON.stringify({
+model: “claude-sonnet-4-20250514”,
+max_tokens: maxTokens,
+system: systemPrompt,
+messages: [{ role: “user”, content: userContent }],
+}),
+});
+const data = await res.json();
+return data.content?.filter(b => b.type === “text”).map(b => b.text).join(””) || “”;
+};
+
+const AI_SYSTEMS = {
+caseAnalysis: `You are CaseOS AI, an expert academic research assistant embedded in a university research platform. Analyze the provided case data and return a JSON object with these exact keys: { "summary": "2-3 sentence case summary", "missingData": ["list of 2-4 missing data points"], "methodology": "1-2 sentence methodology recommendation", "literatureGaps": ["2-3 research gaps"], "comparableCases": ["2 comparable case types"], "publicationScore": <number 0-100>, "ethicsFlags": ["any ethics concerns, or empty array"], "nextSteps": ["3 concrete next steps"] } Base your analysis STRICTLY on the input provided. Vary results based on field, tags, status, and notes content. Return ONLY valid JSON.`,
+
+osteology: `You are an expert forensic anthropologist and osteologist using CaseOS. Given skeletal measurements and observations, return JSON: { "ageRange": "e.g. 25-35 years", "ageConfidence": <0-100>, "biologicalSex": "Male/Female/Indeterminate", "sexConfidence": <0-100>, "statureEstimate": "e.g. 165-172 cm", "statureConfidence": <0-100>, "ancestryNotes": "brief ancestry probability note", "traumaFindings": ["list of trauma observations"], "pathologyRisks": ["list of pathology indicators"], "labRecommendations": ["DNA extraction", "isotope analysis", etc], "overallConfidence": <0-100>, "interpretation": "2-3 sentence expert interpretation" } Base estimates on the actual measurements provided. Return ONLY valid JSON.`,
+
+medicalAI: `You are an expert medical AI assistant integrated into an academic case platform. Given clinical information, return JSON: { "primaryDiagnosis": "most likely diagnosis", "differentials": ["3-4 differential diagnoses"], "symptomAnalysis": "brief analysis of symptom pattern", "recommendedTests": ["3-5 recommended investigations"], "treatmentPathway": "brief treatment approach", "anatomyNote": "relevant anatomy teaching point", "residentQuiz": "one teaching question based on the case", "urgencyLevel": "Routine/Urgent/Emergency", "confidenceScore": <0-100> } Return ONLY valid JSON.`,
+
+researchGap: `You are a research methodology expert and academic publishing advisor. Analyze the research notes/description and return JSON: { "missingHypotheses": ["2-3 untested hypotheses"], "dataInsufficiencies": ["2-3 data gaps"], "publishableSection": "which part is most ready to publish", "recommendedJournals": ["2-3 specific journal names appropriate to the field"], "strengthScore": <0-100>, "weaknessScore": <0-100>, "keyRecommendation": "one-sentence top recommendation" } Return ONLY valid JSON.`,
+
+translation: `You are a precise academic translator. Translate the given text accurately preserving scientific terminology. Return ONLY the translated text, no explanations.`,
+};
+
+const parseJSON = (str) => {
+try {
+const clean = str.replace(/`json|`/g, “”).trim();
+return JSON.parse(clean);
+} catch { return null; }
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTH FLOW ENGINE
+// ═══════════════════════════════════════════════════════════════════════════════
+const EDU_DOMAINS = [”.edu”,”.edu.tr”,”.ac.uk”,”.edu.au”,”.edu.cn”,”.ac.jp”,”.edu.ca”,”.ac.nz”];
+const CLASS_CODES = {
+“ANTH-301”: { name:“Cultural Anthropology”, ws:“Anthropology Lab”, faculty:“Anthropology” },
+“FORENSIC-LAB”: { name:“Forensic Science Lab”, ws:“Forensic Osteology Unit”, faculty:“Forensic Science” },
+“MED-ANAT-1”: { name:“Medical Anatomy I”, ws:“Medical Anatomy Lab”, faculty:“Medicine” },
+“SOC-415”: { name:“Urban Sociology”, ws:“Sociology Field Research”, faculty:“Sociology” },
+“ARCH-201”: { name:“Archaeological Methods”, ws:“Archaeology Lab”, faculty:“Archaeology” },
+};
+const ROLES = [“Student”,“Faculty”,“Lab Researcher”,“Medical Resident”,“Independent Scholar”];
+const FACULTIES_LIST = [
+“Anthropology”,“Medicine”,“Forensic Science”,“Sociology”,“Psychology”,
+“Archaeology”,“Genetics”,“Public Health”,“Dentistry”,“Veterinary Medicine”
+];
+
+const isEduEmail = (email) => EDU_DOMAINS.some(d => email.toLowerCase().endsWith(d));
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MOCK DATA (unchanged + expanded per-faculty)
+// ═══════════════════════════════════════════════════════════════════════════════
+const CASES = [
+{ id:“C-2024-001”, title:“Skeletal Remains – Neolithic Site KV-7”, description:“Partial skeletal assemblage recovered from burial pit at excavation site KV-7. Estimated mid-Neolithic period. Multiple individuals suspected.”, status:“open”, workspace:“Forensic Osteology Unit”, field:“Forensic Anthropology”, faculty:“Forensic Science”, author:“Dr. Ayşe Kaya”, date:“2024-03-12”, tags:[“osteology”,“neolithic”,“forensic”,“skeletal-analysis”], progress:62,
+boneAnalysis:{ skeletal_inventory:{Cranium:true,Mandible:true,“C. Vertebrae”:false,“T. Vertebrae”:true,“L. Vertebrae”:false,Sacrum:false,Pelvis:“partial”,“Femur L”:true,“Femur R”:true,“Tibia L”:true,“Tibia R”:false,“Fibula L”:false,“Fibula R”:false,“Humerus L”:true,“Humerus R”:false}, stature_estimate:“162–168 cm”, age_estimate:“35–45 years”, sex_estimate:“Female”, sex_confidence:87, trauma_markers:[“Healed perimortem fracture – left femur shaft”,“Blunt force trauma – posterior parietal”,“Compression fracture – T7 vertebra”], pathology:[“Osteoarthritis – bilateral knee joints”,“Dental hypoplasia – enamel defects”,“Porotic hyperostosis – cranial vault”], taphonomy:“Moderate post-depositional disturbance. Root etching present on long bones. Soil staining consistent with waterlogged environment.”, ai_summary:“Analysis suggests an adult female aged 35–45. Skeletal indicators point to habitual physical labor. Trauma pattern consistent with interpersonal violence or accidental injury. Recommend isotope analysis for population affinity.” },
+medicalReview:null,
+notes:[{author:“Dr. Ayşe Kaya”,time:“2024-03-14 09:22”,text:“Skull morphology reviewed. Nasal bone breadth and orbital shape suggest East Mediterranean ancestry.”},{author:“Assist. Mert Doğan”,time:“2024-03-15 14:05”,text:“Femur measurements completed. Bicondylar length: 421mm. Stature formula applied (Trotter & Gleser).”}] },
+{ id:“C-2024-002”, title:“Primatology Field Study – Kaçkar Highlands”, description:“Behavioral and morphological field research on macaque populations in alpine environment. Focus on dietary adaptation and seasonal migration.”, status:“in-review”, workspace:“Anthropology Lab”, field:“Biological Anthropology”, faculty:“Anthropology”, author:“Prof. Cemil Arslan”, date:“2024-02-28”, tags:[“primatology”,“field-study”,“macaque”,“behavioral”], progress:45, boneAnalysis:null, medicalReview:null, notes:[{author:“Prof. Cemil Arslan”,time:“2024-03-01 08:00”,text:“Population size estimated at 34 individuals. Three subgroups identified.”}] },
+{ id:“C-2024-003”, title:“Forensic Identification – Case #447”, description:“Unidentified remains submitted by judicial authority. Complete forensic osteological profile required for legal proceedings.”, status:“open”, workspace:“Forensic Osteology Unit”, field:“Forensic Anthropology”, faculty:“Forensic Science”, author:“Dr. Leyla Şahin”, date:“2024-03-20”, tags:[“forensic”,“identification”,“judicial”,“unknown”], progress:28,
+boneAnalysis:{ skeletal_inventory:{Cranium:true,Mandible:false,“C. Vertebrae”:false,“T. Vertebrae”:false,“L. Vertebrae”:false,Sacrum:false,Pelvis:false,“Femur L”:true,“Femur R”:false,“Tibia L”:false,“Tibia R”:false,“Fibula L”:false,“Fibula R”:false,“Humerus L”:false,“Humerus R”:false}, stature_estimate:“170–176 cm”, age_estimate:“25–35 years”, sex_estimate:“Male”, sex_confidence:92, trauma_markers:[“Perimortem sharp force trauma – frontal bone”,“Multiple cut marks – cervical region”], pathology:[], taphonomy:“Minimal weathering. Fresh appearance. Likely under 6 months post-mortem.”, ai_summary:“Young adult male with perimortem sharp force injuries consistent with homicidal violence. Urgently recommend DNA extraction and dental record comparison.” },
+medicalReview:null, notes:[] },
+{ id:“C-2024-004”, title:“Anatomy Dissection Lab – Cohort 2024B”, description:“Cadaveric anatomy study for medical students. Focus on upper limb musculature and brachial plexus. Teaching lab documentation.”, status:“closed”, workspace:“Medical Anatomy Lab”, field:“Anatomy”, faculty:“Medicine”, author:“Prof. Dr. Hasan Yıldız”, date:“2024-01-10”, tags:[“anatomy”,“dissection”,“medical-education”,“cadaveric”], progress:100, boneAnalysis:null,
+medicalReview:{ anatomy_notes:“Brachial plexus beautifully preserved. Musculocutaneous nerve originates unusually high from lateral cord.”, radiology:“Pre-dissection X-ray: no prior surgical hardware. Normal bone density for stated age (57).”, pathology_obs:“Mild coronary artery calcification noted incidentally. Hepatic steatosis present.”, fracture_analysis:“Healed right clavicle fracture – mid-shaft. Old distal radius fracture with slight malunion.”, trauma:“No recent perimortem trauma.”, diff_diagnosis:“Not applicable – teaching specimen.”, resident_notes:“Students successfully identified all 5 terminal branches. MCN variant documented and photographed.”, ai_reasoning:“Specimen presents typical male anatomy with two noteworthy variants suitable for advanced teaching.” },
+notes:[{author:“Prof. Dr. Hasan Yıldız”,time:“2024-01-15 11:00”,text:“Brachial plexus beautifully preserved. Excellent teaching specimen. Musculocutaneous nerve variant noted.”}] },
+{ id:“C-2024-005”, title:“Thoracic CT Review – Pulmonary Nodule Series”, description:“Retrospective radiology review of thoracic CT scans with incidental pulmonary nodules. AI-assisted nodule characterization study.”, status:“in-review”, workspace:“Radiology Review Room”, field:“Radiology”, faculty:“Medicine”, author:“Dr. Selin Öztürk”, date:“2024-03-05”, tags:[“radiology”,“CT”,“pulmonary”,“AI-assisted”], progress:71, boneAnalysis:null,
+medicalReview:{ anatomy_notes:“Thoracic cavity review. No structural anomalies of thoracic cage.”, radiology:“32 CT scans reviewed. Nodule sizes ranged 4–18 mm. Fleischner Society criteria applied.”, pathology_obs:“4 cases show ground-glass opacity with partial solid component – Lung-RADS 4B. Recommend PET-CT.”, fracture_analysis:“Incidental finding: 3 cases with healing rib fractures.”, trauma:“No acute traumatic findings.”, diff_diagnosis:“Primary lung adenocarcinoma vs. carcinoid vs. metastatic deposit vs. granuloma for Lung-RADS 4B cases.”, resident_notes:“AI-assisted measurements showed 94% agreement with manual resident measurements.”, ai_reasoning:“Recommend expedited workup for 4 flagged cases. 28 remaining suitable for annual follow-up per Fleischner guidelines.” },
+notes:[{author:“Dr. Selin Öztürk”,time:“2024-03-07 16:30”,text:“32 cases reviewed. Fleischner criteria applied. 4 cases flagged for follow-up PET-CT.”}] },
+{ id:“C-2024-006”, title:“Urban Migration Patterns – Istanbul Periphery”, description:“Ethnographic study of internal migration patterns in Istanbul metropolitan periphery. Focus on second-generation migrants and identity formation.”, status:“open”, workspace:“Sociology Field Research”, field:“Urban Sociology”, faculty:“Sociology”, author:“Doç. Dr. Fatma Yılmaz”, date:“2024-03-01”, tags:[“urban”,“migration”,“ethnography”,“identity”], progress:38, boneAnalysis:null, medicalReview:null, notes:[{author:“Doç. Dr. Fatma Yılmaz”,time:“2024-03-02 10:00”,text:“Initial survey of 120 households completed in Esenyurt district.”}] },
+{ id:“C-2024-007”, title:“aDNA Analysis – Bronze Age Burial Site”, description:“Ancient DNA extraction and analysis from Bronze Age skeletal remains. Population genomics and migration route reconstruction.”, status:“open”, workspace:“Genetics Lab”, field:“Archaeogenetics”, faculty:“Genetics”, author:“Dr. Kemal Demir”, date:“2024-03-15”, tags:[“aDNA”,“bronze-age”,“genomics”,“migration”], progress:51, boneAnalysis:null, medicalReview:null, notes:[{author:“Dr. Kemal Demir”,time:“2024-03-16 09:00”,text:“Petrous bone samples selected. DNA extraction protocol initiated.”}] },
+];
+
+const NEWS_BY_FACULTY = {
+“Forensic Science”:[
+{ id:1, journal:“JFS”, date:“Apr 2024”, title:“Novel STR Multiplex Systems for Degraded DNA Identification in Mass Disaster Scenarios”, field:“Forensic Genetics”, reads:“9.2k”, importance:“New identification standard for decomposed remains”, caseLink:“Forensic Identification cases” },
+{ id:2, journal:“IJLM”, date:“Mar 2024”, title:“Machine Learning Applied to Facial Approximation from Skeletal Remains Achieves 89% Accuracy”, field:“Forensic Anthropology · AI”, reads:“14.1k”, importance:“Transforms unidentified remains workflow”, caseLink:“Bone Analysis cases” },
+],
+“Anthropology”:[
+{ id:3, journal:“Nature”, date:“Apr 2024”, title:“New Hominin Fossils from Eastern Africa Push Back Bipedalism by 200,000 Years”, field:“Paleoanthropology”, reads:“12.4k”, importance:“Revises human evolution timeline fundamentally”, caseLink:“Field research cases” },
+{ id:4, journal:“AJPA”, date:“Apr 2024”, title:“Revised Metric Standards for Sex Estimation in Eastern Mediterranean Populations”, field:“Forensic Anthropology”, reads:“5.3k”, importance:“Critical update to osteological standards”, caseLink:“Skeletal analysis cases” },
+],
+“Medicine”:[
+{ id:5, journal:“Science”, date:“Mar 2024”, title:“AI-Powered Bone Age Estimation Achieves Radiologist-Level Accuracy in Pediatric Cohorts”, field:“Radiology · AI”, reads:“8.7k”, importance:“May replace manual bone age assessment”, caseLink:“Radiology review cases” },
+{ id:6, journal:“Lancet”, date:“Apr 2024”, title:“Bone Density Loss Patterns in Long-Duration Spaceflight: 18-Month ISS Data”, field:“Orthopedics · Space Med”, reads:“9.2k”, importance:“New clinical benchmarks for bone loss”, caseLink:“Medical anatomy cases” },
+],
+“Genetics”:[
+{ id:7, journal:“Cell”, date:“Mar 2024”, title:“Ancient Pathogen DNA Recovered from 4,000-Year-Old Skeletal Remains in Anatolia”, field:“Archaeogenetics”, reads:“21.1k”, importance:“New aDNA extraction protocol for calcified tissue”, caseLink:“aDNA analysis cases” },
+{ id:8, journal:“PNAS”, date:“Mar 2024”, title:“Strontium Isotope Analysis Reveals Prehistoric Migration Routes Across Central Anatolia”, field:“Bioarchaeology”, reads:“7.8k”, importance:“Isotope methodology breakthrough”, caseLink:“Migration studies” },
+],
+“Sociology”:[
+{ id:9, journal:“AJS”, date:“Apr 2024”, title:“Digital Displacement: Social Media’s Role in Third-Culture Identity Among Urban Migrants”, field:“Urban Sociology · Digital”, reads:“6.3k”, importance:“New framework for migrant identity research”, caseLink:“Urban ethnography cases” },
+],
+“default”:[
+{ id:10, journal:“Nature”, date:“Apr 2024”, title:“New Hominin Fossils from Eastern Africa Push Back Bipedalism by 200,000 Years”, field:“Paleoanthropology”, reads:“12.4k”, importance:“Revises human evolution timeline fundamentally”, caseLink:“Field research cases” },
+{ id:11, journal:“Science”, date:“Mar 2024”, title:“AI-Powered Bone Age Estimation Achieves Radiologist-Level Accuracy in Pediatric Cohorts”, field:“Radiology · AI”, reads:“8.7k”, importance:“May replace manual bone age assessment”, caseLink:“Radiology review cases” },
+],
+};
+
+const WORKSPACES = [
+{ id:“w1”, name:“Forensic Osteology Unit”, icon:“🦴”, members:8, cases:14, color:”#1e3a5f”, faculty:“Forensic Science” },
+{ id:“w2”, name:“Anthropology Lab”, icon:“🔬”, members:12, cases:23, color:”#1a4731”, faculty:“Anthropology” },
+{ id:“w3”, name:“Medical Anatomy Lab”, icon:“🏥”, members:6, cases:9, color:”#3d2b1f”, faculty:“Medicine” },
+{ id:“w4”, name:“Radiology Review Room”, icon:“🩻”, members:5, cases:31, color:”#1e2a5f”, faculty:“Medicine” },
+{ id:“w5”, name:“Pathology Review Board”, icon:“🧫”, members:9, cases:17, color:”#3d1a3d”, faculty:“Medicine” },
+{ id:“w6”, name:“Sociology Field Research”, icon:“🌍”, members:14, cases:8, color:”#1a3f2f”, faculty:“Sociology” },
+{ id:“w7”, name:“Genetics Lab”, icon:“🧬”, members:7, cases:11, color:”#2d1a4f”, faculty:“Genetics” },
+{ id:“w8”, name:“Archaeology Lab”, icon:“⛏️”, members:10, cases:19, color:”#3f2a1a”, faculty:“Archaeology” },
+];
+
+const ACTIVITIES = [
+{ text:“Dr. Ayşe Kaya uploaded 3 new photos to Case C-2024-001”, time:“2 hours ago” },
+{ text:“Assist. Mert Doğan added bone measurement notes to Neolithic Site KV-7”, time:“4 hours ago” },
+{ text:“Dr. Leyla Şahin opened Forensic Identification Case #447”, time:“Yesterday, 16:42” },
+{ text:“Prof. Dr. Hasan Yıldız marked Anatomy Dissection Lab as Closed”, time:“Yesterday, 09:10” },
+{ text:“Dr. Selin Öztürk updated CT Review progress to 71%”, time:“2 days ago” },
+];
+
+const STATUS_CONFIG = {
+open:{ en:“Open”, tr:“Açık”, color:”#059669”, bg:”#ecfdf5” },
+“in-review”:{ en:“In Review”, tr:“İncelemede”, color:”#d97706”, bg:”#fffbeb” },
+closed:{ en:“Closed”, tr:“Kapalı”, color:”#6b7280”, bg:”#f3f4f6” },
+};
+
+// Simulated analytics data
+const ANALYTICS = {
+facultyAdoption:[
+{ name:“Medicine”, pct:87, users:142 }, { name:“Forensic Sci.”, pct:74, users:89 },
+{ name:“Anthropology”, pct:68, users:103 }, { name:“Sociology”, pct:55, users:67 },
+{ name:“Genetics”, pct:49, users:41 }, { name:“Archaeology”, pct:43, users:38 },
+],
+aiUsage:[
+{ month:“Jan”, queries:312 }, { month:“Feb”, queries:489 }, { month:“Mar”, queries:734 },
+{ month:“Apr”, queries:921 }, { month:“May”, queries:1104 }, { month:“Jun”, queries:987 },
+],
+topThemes:[
+{ theme:“Skeletal Analysis”, count:234 }, { theme:“DNA Extraction”, count:187 },
+{ theme:“Field Ethnography”, count:156 }, { theme:“CT Radiology”, count:143 },
+{ theme:“Urban Migration”, count:98 }, { theme:“Pathology”, count:91 },
+],
+engagement:{ dau:287, wau:1243, mau:3891, avgSession:“23min”, casesPerUser:4.7 },
+};
+
+const CLASS_DATA = [
+{ id:“cl1”, code:“ANTH-301”, name:“Cultural Anthropology”, faculty:“Dr. Cemil Arslan”, students:18, assignments:4, active:true, cases:[“C-2024-002”] },
+{ id:“cl2”, code:“FORENSIC-LAB”, name:“Forensic Science Lab”, faculty:“Dr. Ayşe Kaya”, students:12, assignments:6, active:true, cases:[“C-2024-001”,“C-2024-003”] },
+{ id:“cl3”, code:“MED-ANAT-1”, name:“Medical Anatomy I”, faculty:“Prof. Dr. Hasan Yıldız”, students:24, assignments:8, active:true, cases:[“C-2024-004”] },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CSS
+// ═══════════════════════════════════════════════════════════════════════════════
+const CSS = `
+@import url(‘https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap’);
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+–navy:#0f2240;–navy-m:#1a3255;–navy-l:#243f6a;
+–green:#2a7a50;–green-l:#35a068;–green-p:#e8f5ee;
+–white:#fff;–g50:#f8fafc;–g100:#f1f5f9;–g200:#e2e8f0;
+–g400:#94a3b8;–g600:#475569;–g700:#334155;–g800:#1e293b;
+–amber:#d97706;–rose:#e11d48;–blue:#2563eb;
+–sh-sm:0 1px 3px rgba(15,34,64,.07),0 1px 2px rgba(15,34,64,.04);
+–sh-md:0 4px 14px rgba(15,34,64,.09),0 2px 6px rgba(15,34,64,.05);
+–sh-lg:0 10px 32px rgba(15,34,64,.12),0 4px 12px rgba(15,34,64,.07);
+–r:12px;–rs:8px;
+}
+body{font-family:‘DM Sans’,sans-serif;background:var(–g50);color:var(–g800)}
+.app{display:flex;height:100vh;overflow:hidden}
+
+/* AUTH */
+.auth-wrap{min-height:100vh;background:linear-gradient(135deg,var(–navy) 0%,#1a3a6b 50%,#0d4a2f 100%);display:flex;align-items:center;justify-content:center;padding:24px}
+.auth-card{background:var(–white);border-radius:20px;width:100%;max-width:460px;box-shadow:0 24px 64px rgba(0,0,0,.25);overflow:hidden}
+.auth-header{background:linear-gradient(135deg,var(–navy) 0%,var(–navy-l) 100%);padding:28px 32px 22px;text-align:center}
+.auth-logo{width:44px;height:44px;border-radius:11px;background:linear-gradient(135deg,#2563eb,var(–green));display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 12px;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+.auth-title{font-family:‘DM Serif Display’,serif;font-size:24px;color:#fff;margin-bottom:4px}
+.auth-sub{font-size:12.5px;color:rgba(255,255,255,.5)}
+.auth-body{padding:28px 32px 32px}
+.auth-step{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(–g400);font-weight:700;margin-bottom:18px;text-align:center}
+.auth-option{display:flex;align-items:center;gap:13px;padding:14px 16px;border:1.5px solid var(–g200);border-radius:var(–r);cursor:pointer;transition:all .18s;margin-bottom:10px;background:var(–white)}
+.auth-option:hover{border-color:var(–navy-l);background:var(–g50);box-shadow:var(–sh-sm)}
+.auth-option.selected{border-color:var(–navy);background:#eff6ff}
+.auth-opt-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.auth-opt-title{font-size:13.5px;font-weight:600;color:var(–navy);margin-bottom:2px}
+.auth-opt-sub{font-size:11.5px;color:var(–g600)}
+.auth-inp{width:100%;padding:10px 13px;border:1.5px solid var(–g200);border-radius:var(–rs);font-size:13.5px;font-family:‘DM Sans’,sans-serif;outline:none;transition:border-color .15s;color:var(–g800);margin-bottom:10px;background:var(–g50)}
+.auth-inp:focus{border-color:var(–navy-l);background:#fff}
+.auth-inp.valid{border-color:var(–green)}
+.auth-inp.invalid{border-color:var(–rose)}
+.auth-hint{font-size:11px;margin-bottom:10px;padding:7px 11px;border-radius:7px}
+.auth-hint.ok{background:var(–green-p);color:var(–green);border:1px solid #a7f3d0}
+.auth-hint.err{background:#fef2f2;color:var(–rose);border:1px solid #fecaca}
+.auth-btn{width:100%;padding:12px;background:var(–navy);color:#fff;border:none;border-radius:var(–rs);font-size:14px;font-weight:600;cursor:pointer;transition:background .15s;font-family:‘DM Sans’,sans-serif;margin-top:6px}
+.auth-btn:hover{background:var(–navy-l)}
+.auth-btn.green{background:var(–green)}.auth-btn.green:hover{background:var(–green-l)}
+.auth-divider{text-align:center;color:var(–g400);font-size:12px;margin:14px 0;position:relative}
+.auth-divider::before{content:’’;position:absolute;top:50%;left:0;right:0;height:1px;background:var(–g200)}
+.auth-divider span{background:#fff;padding:0 10px;position:relative}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.role-btn{padding:11px 10px;border:1.5px solid var(–g200);border-radius:var(–rs);cursor:pointer;text-align:center;transition:all .15s;background:var(–white)}
+.role-btn:hover{border-color:var(–navy-l);background:var(–g50)}
+.role-btn.selected{border-color:var(–navy);background:#eff6ff;color:var(–navy)}
+.role-btn-icon{font-size:20px;margin-bottom:5px}
+.role-btn-lbl{font-size:12px;font-weight:600}
+
+/* SIDEBAR */
+.sidebar{width:234px;min-width:234px;background:var(–navy);display:flex;flex-direction:column;overflow-y:auto;border-right:1px solid rgba(255,255,255,.06);transition:width .2s ease,min-width .2s ease}
+.sidebar.collapsed{width:0;min-width:0;overflow:hidden}
+.sb-toggle{position:absolute;top:12px;left:8px;z-index:100;width:30px;height:30px;border-radius:50%;background:var(–navy);border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:var(–sh-md)}
+.sb-toggle:hover{background:var(–navy-l);color:#fff}
+.sidebar-wrap{position:relative;display:flex;flex-shrink:0}
+.sb-logo{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;cursor:pointer}
+.logo-sq{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#2563eb 0%,var(–green) 100%);display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px rgba(37,99,235,.3);position:relative;overflow:hidden;flex-shrink:0}
+.logo-sq::after{content:’’;position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,transparent 60%)}
+.logo-wordmark{display:flex;flex-direction:column}
+.logo-name{font-family:‘DM Serif Display’,serif;font-size:17px;color:#fff;line-height:1;letter-spacing:-.01em}
+.logo-tag{font-size:9.5px;color:rgba(255,255,255,.38);letter-spacing:.09em;text-transform:uppercase;margin-top:2px}
+.sb-sec{padding:14px 10px 4px}
+.sb-sec-lbl{font-size:9.5px;color:rgba(255,255,255,.28);letter-spacing:.1em;text-transform:uppercase;padding:0 10px;margin-bottom:4px}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(–rs);cursor:pointer;transition:all .14s;color:rgba(255,255,255,.52);font-size:13px;font-weight:400;border:none;background:none;width:100%;text-align:left}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:rgba(255,255,255,.82)}
+.nav-btn.active{background:rgba(42,122,80,.28);color:#fff;font-weight:500}
+.nav-btn.active .ni{color:var(–green-l)}
+.ni{width:17px;text-align:center;font-size:13px;flex-shrink:0}
+.nb{margin-left:auto;background:var(–green);color:#fff;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:10px}
+.lang-switcher{display:flex;gap:3px;padding:6px 10px;border-top:1px solid rgba(255,255,255,.07)}
+.lang-btn{flex:1;padding:5px 0;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:none;color:rgba(255,255,255,.45);font-size:11px;font-weight:600;cursor:pointer;transition:all .14s;font-family:‘DM Sans’,sans-serif;letter-spacing:.04em}
+.lang-btn.active{background:rgba(42,122,80,.35);color:#fff;border-color:rgba(42,122,80,.5)}
+.lang-btn:hover:not(.active){background:rgba(255,255,255,.07);color:rgba(255,255,255,.75)}
+.sb-foot{margin-top:auto;padding:12px 10px;border-top:1px solid rgba(255,255,255,.07)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px}
+.u-av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(–green),#1a5c3a);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0}
+.u-name{font-size:12px;color:rgba(255,255,255,.72);font-weight:500}
+.u-role{font-size:10px;color:rgba(255,255,255,.32)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:54px;min-height:54px;background:var(–white);border-bottom:1px solid var(–g200);display:flex;align-items:center;padding:0 24px;gap:14px;box-shadow:var(–sh-sm)}
+.topbar-title{font-family:‘DM Serif Display’,serif;font-size:19px;color:var(–navy);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.search-box{display:flex;align-items:center;gap:7px;background:var(–g100);border:1px solid var(–g200);border-radius:var(–rs);padding:6px 13px;width:250px;font-size:12.5px;color:var(–g600);transition:all .15s;cursor:text;flex-shrink:0}
+.search-box:hover{border-color:var(–navy-l);background:#fff}
+.tbtn{padding:7px 15px;border-radius:var(–rs);font-size:12.5px;font-weight:500;cursor:pointer;border:none;transition:all .14s;flex-shrink:0;font-family:‘DM Sans’,sans-serif}
+.tbtn-navy{background:var(–navy);color:#fff}.tbtn-navy:hover{background:var(–navy-l)}
+.tbtn-green{background:var(–green);color:#fff}.tbtn-green:hover{background:var(–green-l)}
+.content{flex:1;overflow-y:auto;padding:26px 26px 48px;background:var(–g50)}
+
+/* CARDS */
+.card{background:var(–white);border-radius:var(–r);border:1px solid var(–g200);box-shadow:var(–sh-sm);overflow:hidden}
+.card-hd{padding:14px 18px 12px;border-bottom:1px solid var(–g100);display:flex;align-items:center;justify-content:space-between}
+.card-t{font-size:13.5px;font-weight:600;color:var(–navy)}
+.card-lk{font-size:11.5px;color:var(–green);font-weight:500;cursor:pointer}.card-lk:hover{text-decoration:underline}
+
+/* DASHBOARD */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-c{background:var(–white);border-radius:var(–r);padding:18px;border:1px solid var(–g200);box-shadow:var(–sh-sm);transition:box-shadow .2s,transform .2s;cursor:default}
+.stat-c:hover{box-shadow:var(–sh-md);transform:translateY(-1px)}
+.stat-ico{font-size:20px;margin-bottom:8px}
+.stat-lbl{font-size:11px;color:var(–g600);text-transform:uppercase;letter-spacing:.06em;font-weight:500}
+.stat-val{font-family:‘DM Serif Display’,serif;font-size:32px;color:var(–navy);margin:4px 0 2px;line-height:1}
+.stat-sub{font-size:11.5px;color:var(–g400)}
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.dash-wide{display:grid;grid-template-columns:3fr 2fr;gap:18px;margin-bottom:18px}
+.activity-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(–g100)}
+.activity-item:last-child{border-bottom:none}
+.a-dot{width:7px;height:7px;border-radius:50%;background:var(–green-l);margin-top:5px;flex-shrink:0}
+.a-txt{font-size:12.5px;color:var(–g700);line-height:1.5}
+.a-time{font-size:11px;color:var(–g400);margin-top:1px}
+.heatmap{display:flex;gap:3px;flex-wrap:wrap}
+.hm-cell{width:13px;height:13px;border-radius:3px}
+
+/* CASES */
+.cases-hd{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.filter-tabs{display:flex;gap:4px}
+.ftab{padding:5px 13px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:1px solid var(–g200);background:var(–white);color:var(–g600);transition:all .14s;font-family:‘DM Sans’,sans-serif}
+.ftab.active{background:var(–navy);color:#fff;border-color:var(–navy)}
+.case-row{background:var(–white);border:1px solid var(–g200);border-radius:var(–r);padding:16px 18px;margin-bottom:9px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .15s;box-shadow:var(–sh-sm)}
+.case-row:hover{border-color:var(–navy-l);box-shadow:var(–sh-md);transform:translateX(2px)}
+.case-id{font-family:‘JetBrains Mono’,monospace;font-size:10.5px;color:var(–g400);min-width:92px}
+.case-info{flex:1;min-width:0}
+.case-title-sm{font-size:13.5px;font-weight:600;color:var(–navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.case-field{font-size:11.5px;color:var(–g600);margin-top:1px}
+.s-pill{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.case-auth{font-size:11.5px;color:var(–g600);min-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.case-prog{min-width:90px}
+.prog-bar{height:4px;background:var(–g100);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(–green),var(–green-l));transition:width .3s}
+.prog-lbl{font-size:10px;color:var(–g400);margin-top:3px}
+
+/* CASE DETAIL */
+.case-detail-wrap{display:flex;height:100%;overflow:hidden}
+.case-main{flex:1;overflow-y:auto;padding:26px}
+.ai-panel{width:340px;min-width:340px;background:var(–white);border-left:1px solid var(–g200);overflow-y:auto;display:flex;flex-direction:column}
+.back-btn{display:inline-flex;align-items:center;gap:5px;cursor:pointer;color:var(–g600);font-size:12.5px;padding:5px 11px;border-radius:6px;border:1px solid var(–g200);background:var(–white);margin-bottom:16px;transition:all .14s;box-shadow:var(–sh-sm);font-family:‘DM Sans’,sans-serif}
+.back-btn:hover{background:var(–g100)}
+.case-title-lg{font-family:‘DM Serif Display’,serif;font-size:22px;color:var(–navy);line-height:1.3}
+.case-meta-row{display:flex;gap:18px;font-size:12px;color:var(–g600);margin-top:7px;flex-wrap:wrap}
+.case-tags-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.tag-chip{padding:3px 9px;background:var(–g100);border-radius:20px;font-size:11px;color:var(–g600);font-weight:500}
+.tabs{display:flex;gap:0;border-bottom:2px solid var(–g200);margin:20px 0 22px}
+.tab{padding:9px 16px;font-size:12.5px;font-weight:500;color:var(–g600);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .14s;white-space:nowrap}
+.tab:hover{color:var(–navy)}.tab.active{color:var(–navy);border-bottom-color:var(–navy);font-weight:600}
+
+/* AI PANEL TABS */
+.ai-tabs{display:flex;border-bottom:1px solid var(–g100);background:var(–g50)}
+.ai-tab{flex:1;padding:8px 4px;font-size:10px;font-weight:600;text-align:center;cursor:pointer;color:var(–g600);border-bottom:2px solid transparent;transition:all .14s}
+.ai-tab.active{color:var(–navy);border-bottom-color:var(–navy);background:var(–white)}
+.ai-hd{padding:14px 18px 10px;border-bottom:1px solid var(–g100);position:sticky;top:0;background:var(–white);z-index:1}
+.ai-title{font-size:13px;font-weight:700;color:var(–navy)}
+.ai-badge{padding:2px 7px;background:linear-gradient(135deg,var(–navy),var(–green));color:#fff;font-size:8.5px;font-weight:700;border-radius:4px;letter-spacing:.05em;margin-left:7px}
+.ai-sec{padding:12px 18px;border-bottom:1px solid var(–g100)}
+.ai-sec-lbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(–g400);font-weight:700;margin-bottom:7px}
+.ai-txt{font-size:12px;color:var(–g700);line-height:1.65}
+.ai-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:500;margin:2px}
+.chip-b{background:#eff6ff;color:#1d4ed8}.chip-g{background:var(–green-p);color:var(–green)}.chip-a{background:#fffbeb;color:#92400e}.chip-r{background:#fef2f2;color:#991b1b}
+.ai-inp-area{padding:12px 16px;border-top:1px solid var(–g100);background:var(–white)}
+.ai-inp{width:100%;padding:9px 12px;border:1px solid var(–g200);border-radius:var(–rs);font-size:12px;font-family:‘DM Sans’,sans-serif;resize:none;outline:none;transition:border-color .15s;background:var(–g50);color:var(–g800);height:60px}
+.ai-inp:focus{border-color:var(–navy-l);background:#fff}
+.ai-send{margin-top:6px;width:100%;padding:8px;background:var(–navy);color:#fff;border:none;border-radius:var(–rs);font-size:12px;font-weight:600;cursor:pointer;transition:background .14s;font-family:‘DM Sans’,sans-serif}
+.ai-send:hover{background:var(–navy-l)}
+
+/* CONFIDENCE BAR */
+.conf-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.conf-label{font-size:11px;color:var(–g600);width:90px;flex-shrink:0}
+.conf-track{flex:1;height:5px;background:var(–g100);border-radius:3px;overflow:hidden}
+.conf-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.conf-num{font-size:11px;font-weight:700;width:34px;text-align:right;flex-shrink:0}
+
+/* OSTEOLOGY FORM */
+.osteo-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.osteo-field{display:flex;flex-direction:column;gap:3px}
+.osteo-lbl{font-size:10px;font-weight:700;color:var(–g400);text-transform:uppercase;letter-spacing:.07em}
+.osteo-inp{padding:7px 9px;border:1px solid var(–g200);border-radius:6px;font-size:12px;font-family:‘DM Sans’,sans-serif;outline:none;background:var(–g50);color:var(–g800);transition:border-color .15s}
+.osteo-inp:focus{border-color:var(–navy-l);background:#fff}
+
+/* BONE ANALYSIS */
+.bone-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.bone-card{background:var(–white);border:1px solid var(–g200);border-radius:var(–r);padding:16px;box-shadow:var(–sh-sm)}
+.bone-card.full{grid-column:1/-1}
+.bc-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(–g400);font-weight:700;margin-bottom:8px}
+.bc-val{font-family:‘DM Serif Display’,serif;font-size:20px;color:var(–navy)}
+.conf-bar{height:5px;background:var(–g100);border-radius:3px;overflow:hidden;margin-top:6px}
+.conf-fill-bone{height:100%;border-radius:3px;background:linear-gradient(90deg,var(–green),#10b981)}
+.skel-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sk-chip{padding:5px 8px;border-radius:6px;font-size:10.5px;font-weight:500;text-align:center}
+.sk-y{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}
+.sk-n{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}
+.sk-p{background:#fffbeb;color:#92400e;border:1px solid #fcd34d}
+.t-list{list-style:none}
+.t-item{padding:7px 0;border-bottom:1px solid var(–g100);font-size:12.5px;color:var(–g800);display:flex;align-items:flex-start;gap:8px}
+.t-item:last-child{border-bottom:none}
+.t-dot{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0}
+.t-rose{background:var(–rose)}.t-amber{background:var(–amber)}.t-green{background:var(–green-l)}
+
+/* MEDICAL */
+.med-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.med-card{background:var(–white);border:1px solid var(–g200);border-radius:var(–r);padding:16px;box-shadow:var(–sh-sm)}
+.med-card.full{grid-column:1/-1}
+.med-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(–g400);font-weight:700;margin-bottom:8px}
+.med-txt{font-size:12.5px;color:var(–g700);line-height:1.65}
+
+/* OVERVIEW */
+.ov-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.ov-card{background:var(–white);border:1px solid var(–g200);border-radius:var(–r);padding:16px;box-shadow:var(–sh-sm)}
+.ov-card.full{grid-column:1/-1}
+.ov-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:var(–g400);font-weight:700;margin-bottom:8px}
+.ov-txt{font-size:12.5px;color:var(–g700);line-height:1.65}
+.note-item{padding:12px;background:var(–g50);border:1px solid var(–g100);border-radius:var(–rs);margin-bottom:9px}
+.note-auth{font-size:11px;font-weight:600;color:var(–navy)}
+.note-time{font-size:10.5px;color:var(–g400);margin-left:8px}
+.note-txt{font-size:12.5px;color:var(–g700);margin-top:4px;line-height:1.55}
+
+/* NEWS */
+.news-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.news-c{background:var(–white);border:1px solid var(–g200);border-radius:var(–r);padding:16px;box-shadow:var(–sh-sm);cursor:pointer;transition:all .18s}
+.news-c:hover{box-shadow:var(–sh-md);transform:translateY(-2px)}
+.news-j{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(–green);margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.news-title{font-family:‘DM Serif Display’,serif;font-size:14px;color:var(–navy);line-height:1.4;margin-bottom:6px}
+.news-importance{font-size:11.5px;color:var(–g700);line-height:1.5;margin-bottom:6px;padding:7px 10px;background:var(–green-p);border-radius:6px;border-left:3px solid var(–green)}
+.news-ft{padding:2px 7px;background:var(–g100);border-radius:4px;font-size:10px;font-weight:500;color:var(–g600);display:inline-block}
+.news-reads{font-size:10.5px;color:var(–g400);margin-top:5px}
+.news-case-link{font-size:10.5px;color:var(–navy);font-weight:500;margin-top:5px;display:flex;align-items:center;gap:4px}
+
+/* WORKSPACES */
+.ws-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.ws-c{border-radius:var(–r);padding:20px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;min-height:122px}
+.ws-c::before{content:’’;position:absolute;top:-18px;right:-18px;width:72px;height:72px;background:rgba(255,255,255,.07);border-radius:50%}
+.ws-c:hover{transform:translateY(-3px);box-shadow:var(–sh-lg)}
+.ws-ico{font-size:22px;margin-bottom:10px}
+.ws-name{font-size:14px;font-weight:600;color:#fff;margin-bottom:7px;line-height:1.3}
+.ws-st{font-size:11.5px;color:rgba(255,255,255,.55);display:flex;gap:12px}
+
+/* CLASSROOM */
+.class-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:20px}
+.class-card{background:var(–white);border:1px solid var(–g200);border-radius:var(–r);padding:18px;box-shadow:var(–sh-sm);cursor:pointer;transition:all .15s}
+.class-card:hover{border-color:var(–navy-l);box-shadow:var(–sh-md)}
+.class-code{font-family:‘JetBrains Mono’,monospace;font-size:11px;color:var(–green);font-weight:700;background:var(–green-p);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:8px}
+.class-name{font-size:15px;font-weight:700;color:var(–navy);margin-bottom:4px}
+.class-meta{font-size:12px;color:var(–g600);margin-bottom:12px}
+.class-stats{display:flex;gap:14px}
+.class-stat{font-size:11.5px;color:var(–g600)}
+.join-code-box{background:var(–g50);border:1.5px dashed var(–g200);border-radius:var(–r);padding:20px;text-align:center;margin-bottom:16px}
+.join-code-input{font-family:‘JetBrains Mono’,monospace;font-size:18px;text-align:center;letter-spacing:.15em;padding:12px 20px;border:2px solid var(–g200);border-radius:var(–rs);width:100%;outline:none;color:var(–navy);background:#fff;transition:border-color .15s}
+.join-code-input:focus{border-color:var(–navy-l)}
+
+/* ANALYTICS */
+.analytics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+.kpi-card{background:var(–white);border:1px solid var(–g200);border-radius:var(–r);padding:18px;box-shadow:var(–sh-sm)}
+.kpi-val{font-family:‘DM Serif Display’,serif;font-size:28px;color:var(–navy);line-height:1}
+.kpi-lbl{font-size:11px;color:var(–g600);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-top:6px}
+.kpi-sub{font-size:11.5px;color:var(–green);font-weight:500;margin-top:3px}
+.bar-chart{display:flex;flex-direction:column;gap:8px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-label{font-size:12px;color:var(–g700);width:110px;flex-shrink:0;text-align:right}
+.bar-track{flex:1;height:18px;background:var(–g100);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(–navy),var(–navy-l));transition:width .8s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:6px}
+.bar-fill-text{font-size:10px;font-weight:700;color:rgba(255,255,255,.8)}
+.bar-val{font-size:11.5px;font-weight:600;color:var(–navy);width:36px;flex-shrink:0}
+
+/* TRANSLATE BTN */
+.translate-btn{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:5px;border:1px solid var(–g200);background:var(–g50);color:var(–g600);font-size:10.5px;font-weight:500;cursor:pointer;transition:all .14s;font-family:‘DM Sans’,sans-serif;margin-top:6px}
+.translate-btn:hover{border-color:var(–navy-l);color:var(–navy);background:#fff}
+.translate-btn.translated{background:#ecfdf5;border-color:#a7f3d0;color:#065f46}
+.translate-badge{display:inline-flex;align-items:center;gap:3px;font-size:9.5px;padding:1px 6px;border-radius:4px;background:#ecfdf5;color:#065f46;font-weight:600;margin-left:6px;vertical-align:middle}
+
+/* PUB SCORE */
+.pub-score-ring{position:relative;width:72px;height:72px;flex-shrink:0}
+.pub-score-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-start;flex-direction:column;justify-content:center}
+.pub-score-num{font-family:‘DM Serif Display’,serif;font-size:18px;color:var(–navy);line-height:1}
+.pub-score-lbl{font-size:8px;color:var(–g400);font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+
+.sec-title{font-family:‘DM Serif Display’,serif;font-size:20px;color:var(–navy);margin-bottom:3px}
+.sec-sub{font-size:12.5px;color:var(–g600);margin-bottom:20px}
+.empty{text-align:center;padding:36px;color:var(–g400);font-size:13px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result-box{padding:12px 14px;border-radius:9px;margin-top:10px;font-size:12.5px;line-height:1.65}
+.result-box.green{background:var(–green-p);border:1px solid #a7f3d0;color:#065f46}
+.result-box.blue{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.result-box.amber{background:#fffbeb;border:1px solid #fcd34d;color:#92400e}
+.result-box.rose{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.urgency-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.03em}
+.urgency-routine{background:#ecfdf5;color:#065f46}
+.urgency-urgent{background:#fffbeb;color:#92400e}
+.urgency-emergency{background:#fef2f2;color:#991b1b}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(–g200);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(–g400)}
+`;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SMALL SHARED COMPONENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+function StatusPill({ status }) {
+const { lang } = useLang();
+const c = STATUS_CONFIG[status];
+return <span className=“s-pill” style={{ background:c.bg, color:c.color }}>{c[lang]}</span>;
+}
+function ProgressBar({ pct }) {
+return (
+<div className="case-prog">
+<div className="prog-bar"><div className=“prog-fill” style={{ width:`${pct}%` }} /></div>
+<div className="prog-lbl">{pct}%</div>
+</div>
+);
+}
+function Heatmap() {
+const vals = Array.from({ length:70 }, () => Math.floor(Math.random()*5));
+const cols = [”#f1f5f9”,”#d1fae5”,”#6ee7b7”,”#10b981”,”#059669”];
+return <div className="heatmap">{vals.map((v,i) => <div key={i} className=“hm-cell” style={{ background:cols[v] }} />)}</div>;
+}
+function ConfidenceBar({ label, value, color=”#2a7a50” }) {
+return (
+<div className="conf-row">
+<div className="conf-label">{label}</div>
+<div className="conf-track"><div className=“conf-fill” style={{ width:`${value}%`, background:color }} /></div>
+<div className=“conf-num” style={{ color }}>{value}%</div>
+</div>
+);
+}
+function PublicationScore({ score }) {
+const color = score >= 70 ? “#2a7a50” : score >= 40 ? “#d97706” : “#e11d48”;
+const r = 30, circ = 2 * Math.PI * r;
+const dash = (score / 100) * circ;
+return (
+<div className="pub-score-ring">
+<svg width="72" height="72" viewBox="0 0 72 72">
+<circle cx="36" cy="36" r={r} fill="none" stroke="#e2e8f0" strokeWidth="6" />
+<circle cx=“36” cy=“36” r={r} fill=“none” stroke={color} strokeWidth=“6”
+strokeDasharray={`${dash} ${circ}`} strokeLinecap=“round” transform=“rotate(-90 36 36)” />
+</svg>
+<div className="pub-score-val">
+<span className=“pub-score-num” style={{ color }}>{score}</span>
+<span className="pub-score-lbl">pub.</span>
+</div>
+</div>
+);
+}
+function TranslateNoteBtn({ text, targetLang }) {
+const { t } = useLang();
+const [state, setState] = useState(“idle”);
+const [translated, setTranslated] = useState(””);
+const handleTranslate = async () => {
+if (state === “done”) { setState(“idle”); setTranslated(””); return; }
+if (state === “loading”) return;
+setState(“loading”);
+const langName = targetLang === “tr” ? “Turkish” : “English”;
+try {
+const result = await callClaude(AI_SYSTEMS.translation, `Translate to ${langName}:\n\n${text}`);
+setTranslated(result); setState(“done”);
+} catch { setState(“idle”); }
+};
+return (
+<div>
+<button className={`translate-btn${state==="done"?" translated":""}`} onClick={handleTranslate}>
+{state===“loading”?`⏳ ${t("translating")}`:state===“done”?`↩ ${t("original")}`:`🌐 ${t("translateNote")}`}
+</button>
+{state===“done”&&translated&&(
+<div style={{ marginTop:6,padding:“9px 12px”,background:”#f0fdf4”,border:“1px solid #a7f3d0”,borderRadius:7,fontSize:12.5,color:”#065f46”,lineHeight:1.55 }}>
+<span className="translate-badge">🌐 {t(“translated”)}</span>
+<div style={{ marginTop:5 }}>{translated}</div>
+</div>
+)}
+</div>
+);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AUTH FLOW
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function AuthPage({ onLogin }) {
+const [step, setStep] = useState(“method”);
+const [method, setMethod] = useState(null);
+const [email, setEmail] = useState(””);
+const [password, setPassword] = useState(””);
+const [emailStatus, setEmailStatus] = useState(null);
+const [classCode, setClassCode] = useState(””);
+const [codeStatus, setCodeStatus] = useState(null);
+const [role, setRole] = useState(null);
+const [faculty, setFaculty] = useState(null);
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState(””);
+
+const roleIcons = { Student:“🎓”, Faculty:“👩‍🏫”, “Lab Researcher”:“🔬”, “Medical Resident”:“🏥”, “Independent Scholar”:“📚” };
+
+const checkEmail = (val) => {
+setEmail(val);
+if (val.includes(”@”)) {
+setEmailStatus(isEduEmail(val) ? “valid” : “invalid”);
+} else setEmailStatus(null);
+};
+const checkCode = (val) => {
+setClassCode(val.toUpperCase());
+setCodeStatus(CLASS_CODES[val.toUpperCase()] ? “valid” : val.length >= 4 ? “invalid” : null);
+};
+
+const handleDone = async () => {
+if (!faculty) return;
+setLoading(true);
+setError(””);
+try {
+const endpoint = method === “register”
+? `${SUPABASE_URL}/auth/v1/signup`
+: `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+const res = await fetch(endpoint, {
+method: “POST”,
+headers: { “Content-Type”: “application/json”, “apikey”: SUPABASE_KEY },
+body: JSON.stringify({ email, password })
+});
+const data = await res.json();
+if (data.error) { setError(data.error_description || data.error); setLoading(false); return; }
+await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+method: “POST”,
+headers: {
+“Content-Type”: “application/json”,
+“apikey”: SUPABASE_KEY,
+“Authorization”: `Bearer ${data.access_token}`
+},
+body: JSON.stringify({ email, full_name: email.split(”@”)[0], field: faculty })
+});
+const ws = method === “classcode” && CLASS_CODES[classCode] ? CLASS_CODES[classCode].ws : WORKSPACES[0].name;
+onLogin({ name: email.split(”@”)[0], role: role || “Faculty”, faculty, email, classCode, workspace: ws });
+} catch(e) {
+setError(“Bağlantı hatası. Tekrar deneyin.”);
+}
+setLoading(false);
+};
+
+return (
+<div className="auth-wrap">
+<div className="auth-card">
+<div className="auth-header">
+<div className="auth-logo">🔬</div>
+<div className="auth-title">CaseOS</div>
+<div className="auth-sub">Academic Research OS · University Edition</div>
+</div>
+<div className="auth-body">
+{step === “method” && (
+<>
+<div className="auth-step">Step 1 of 3 · Choose Sign-in Method</div>
+{[
+{ id:“university”, icon:“🏛️”, bg:”#eff6ff”, title:“Continue with University”, sub:“Use your institutional .edu email” },
+{ id:“classcode”, icon:“🔑”, bg:”#ecfdf5”, title:“Join with Class / Lab Code”, sub:“e.g. ANTH-301, FORENSIC-LAB” },
+{ id:“independent”, icon:“📚”, bg:”#faf5ff”, title:“Independent Researcher”, sub:“Personal research workspace” },
+{ id:“email”, icon:“✉️”, bg:”#f8fafc”, title:“Email & Password”, sub:“Classic sign-in” },
+].map(opt => (
+<div key={opt.id} className={`auth-option${method===opt.id?" selected":""}`} onClick={()=>setMethod(opt.id)}>
+<div className=“auth-opt-icon” style={{ background:opt.bg }}>{opt.icon}</div>
+<div><div className="auth-opt-title">{opt.title}</div><div className="auth-opt-sub">{opt.sub}</div></div>
+{method===opt.id && <span style={{ marginLeft:“auto”,color:”#2a7a50”,fontSize:16 }}>✓</span>}
+</div>
+))}
+<button className=“auth-btn” onClick={()=>{ if(!method) return; if(method===“university”||method===“email”) setStep(“email”); else if(method===“classcode”) setStep(“code”); else setStep(“role”); }} disabled={!method}>Continue →</button>
+</>
+)}
+{step === “email” && (
+<>
+<div className="auth-step">Step 2 · {method===“university”?“University Email”:“Email & Password”}</div>
+<input className={`auth-inp${emailStatus==="valid"?" valid":emailStatus==="invalid"?" invalid":""}`}
+placeholder={method===“university”?“yourname@university.edu”:“your@email.com”}
+value={email} onChange={e=>checkEmail(e.target.value)} type=“email” />
+{emailStatus===“valid” && <div className="auth-hint ok">✓ Institutional email recognized</div>}
+{emailStatus===“invalid” && method===“university” && <div className="auth-hint err">⚠ Please use a .edu or .edu.tr email</div>}
+<input className=“auth-inp” placeholder=“Password” type=“password” style={{ marginTop:4 }}
+onChange={e=>setPassword(e.target.value)} />
+<div style={{ display:“flex”, gap:8, marginBottom:8 }}>
+<button className=“auth-btn” style={{ flex:1, background:”#1e3a5f” }} onClick={()=>{ setMethod(m=>m); setStep(“role”); }}>Login →</button>
+<button className=“auth-btn” style={{ flex:1 }} onClick={()=>{ setMethod(“register”); setStep(“role”); }}>Register →</button>
+</div>
+<button style={{ width:“100%”,padding:8,background:“none”,border:“none”,color:“var(–g400)”,fontSize:12,cursor:“pointer” }} onClick={()=>setStep(“method”)}>← Back</button>
+</>
+)}
+{step === “code” && (
+<>
+<div className="auth-step">Step 2 · Enter Class / Lab Code</div>
+<div className="join-code-box">
+<input className=“join-code-input” placeholder=“e.g. ANTH-301”
+value={classCode} onChange={e=>checkCode(e.target.value)} maxLength={20} />
+{codeStatus===“valid” && <div className=“auth-hint ok” style={{ marginTop:10,textAlign:“left” }}>✓ {CLASS_CODES[classCode]?.name}</div>}
+{codeStatus===“invalid” && <div className=“auth-hint err” style={{ marginTop:10,textAlign:“left” }}>Code not recognized.</div>}
+</div>
+<button className=“auth-btn green” onClick={()=>{ if(codeStatus===“valid”) setStep(“role”); }} disabled={codeStatus!==“valid”}>Join Class →</button>
+<button style={{ width:“100%”,padding:8,background:“none”,border:“none”,color:“var(–g400)”,fontSize:12,cursor:“pointer”,marginTop:6 }} onClick={()=>setStep(“method”)}>← Back</button>
+</>
+)}
+{step === “role” && (
+<>
+<div className="auth-step">Step 3 · Your Role</div>
+<div className="role-grid">
+{ROLES.map(r => (
+<div key={r} className={`role-btn${role===r?" selected":""}`} onClick={()=>setRole(r)}>
+<div className="role-btn-icon">{roleIcons[r]}</div>
+<div className="role-btn-lbl">{r}</div>
+</div>
+))}
+</div>
+<button className=“auth-btn” onClick={()=>{ if(role) setStep(“faculty”); }} disabled={!role}>Continue →</button>
+<button style={{ width:“100%”,padding:8,background:“none”,border:“none”,color:“var(–g400)”,fontSize:12,cursor:“pointer”,marginTop:6 }} onClick={()=>setStep(method===“classcode”?“code”:“email”)}>← Back</button>
+</>
+)}
+{step === “faculty” && (
+<>
+<div className="auth-step">Almost done · Select Your Faculty</div>
+<div style={{ display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:7,marginBottom:16 }}>
+{FACULTIES_LIST.map(f => (
+<div key={f} className={`auth-option${faculty===f?" selected":""}`} style={{ padding:“10px 12px”,marginBottom:0 }} onClick={()=>setFaculty(f)}>
+<div style={{ fontSize:12.5,fontWeight:600,color:“var(–navy)” }}>{f}</div>
+{faculty===f && <span style={{ marginLeft:“auto”,color:”#2a7a50”,fontSize:14 }}>✓</span>}
+</div>
+))}
+</div>
+{error && <div style={{ color:”#e11d48”,fontSize:12,marginBottom:8 }}>{error}</div>}
+<button className="auth-btn green" onClick={handleDone} disabled={!faculty||loading}>
+{loading ? “⏳ Loading…” : “Enter CaseOS →”}
+</button>
+</>
+)}
+</div>
+</div>
+</div>
+);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AI PANEL — 5 real modules
+// ═══════════════════════════════════════════════════════════════════════════════
+function AIPanel({ c, user }) {
+const { t, lang } = useLang();
+const [aiTab, setAiTab] = useState(“chat”);
+const [query, setQuery] = useState(””);
+const [aiReply, setAiReply] = useState(null);
+const [loading, setLoading] = useState(false);
+// Case Analysis state
+const [caseAnalysis, setCaseAnalysis] = useState(null);
+const [caseLoading, setCaseLoading] = useState(false);
+// Osteology state
+const [osteoForm, setOsteoForm] = useState({ femurLength:””, humerusLength:””, pelvisMorphology:””, cranialTraits:””, dentalWear:””, epiphysealFusion:””, pathologyNotes:”” });
+const [osteoResult, setOsteoResult] = useState(null);
+const [osteoLoading, setOsteoLoading] = useState(false);
+// Medical AI state
+const [medForm, setMedForm] = useState({ symptoms:””, age:””, sex:””, clinicalHistory:””, labFindings:”” });
+const [medResult, setMedResult] = useState(null);
+const [medLoading, setMedLoading] = useState(false);
+// Research Gap state
+const [gapResult, setGapResult] = useState(null);
+const [gapLoading, setGapLoading] = useState(false);
+
+const replyLang = lang === “tr” ? “Turkish” : “English”;
+
+// Chat
+const askAI = async () => {
+if (!query.trim() || loading) return;
+setLoading(true); setAiReply(null);
+const prompt = `You are CaseOS AI, an expert academic assistant. Case: "${c.title}" (${c.field}). Context: ${c.description}. Notes: ${c.notes.map(n=>n.text).join(". ")}. Answer in ${replyLang} in 2-4 sentences. User question: ${query}`;
+try { const r = await callClaude(AI_SYSTEMS.caseAnalysis.split(”\n”)[0], prompt, 400); setAiReply(r); }
+catch { setAiReply(t(“aiError”)); }
+setLoading(false); setQuery(””);
+};
+
+// Case Analysis
+const runCaseAnalysis = async () => {
+setCaseLoading(true); setCaseAnalysis(null);
+const input = `Field: ${c.field}\nFaculty: ${c.faculty}\nStatus: ${c.status}\nTags: ${c.tags.join(", ")}\nDescription: ${c.description}\nNotes: ${c.notes.map(n=>n.text).join(" | ")}\nProgress: ${c.progress}%\nBone data: ${c.boneAnalysis ? "yes - "+c.boneAnalysis.ai_summary : "no"}\nMedical data: ${c.medicalReview ? "yes" : "no"}`;
+try { const r = await callClaude(AI_SYSTEMS.caseAnalysis, input, 700); setCaseAnalysis(parseJSON(r) || { summary:r }); }
+catch { setCaseAnalysis({ summary:“Analysis failed. Please try again.” }); }
+setCaseLoading(false);
+};
+
+// Osteology
+const runOsteo = async () => {
+if (!Object.values(osteoForm).some(v=>v.trim())) return;
+setOsteoLoading(true); setOsteoResult(null);
+const input = Object.entries(osteoForm).filter(([,v])=>v.trim()).map(([k,v])=>`${k}: ${v}`).join(”\n”);
+try { const r = await callClaude(AI_SYSTEMS.osteology, `Skeletal data:\n${input}`, 600); setOsteoResult(parseJSON(r)); }
+catch { setOsteoResult(null); }
+setOsteoLoading(false);
+};
+
+// Medical
+const runMedical = async () => {
+if (!medForm.symptoms.trim()) return;
+setMedLoading(true); setMedResult(null);
+const input = Object.entries(medForm).filter(([,v])=>v.trim()).map(([k,v])=>`${k}: ${v}`).join(”\n”);
+try { const r = await callClaude(AI_SYSTEMS.medicalAI, `Clinical info:\n${input}`, 700); setMedResult(parseJSON(r)); }
+catch { setMedResult(null); }
+setMedLoading(false);
+};
+
+// Research Gap
+const runGap = async () => {
+setGapLoading(true); setGapResult(null);
+const input = `Field: ${c.field}\nDescription: ${c.description}\nNotes: ${c.notes.map(n=>n.text).join(" | ")}\nTags: ${c.tags.join(", ")}\nProgress: ${c.progress}%`;
+try { const r = await callClaude(AI_SYSTEMS.researchGap, input, 600); setGapResult(parseJSON(r)); }
+catch { setGapResult(null); }
+setGapLoading(false);
+};
+
+const tabs = [
+{ id:“chat”, label:“💬 Chat” },
+{ id:“analysis”, label:“🔍 Analysis” },
+{ id:“osteo”, label:“🦴 Osteo” },
+{ id:“medical”, label:“🏥 Medical” },
+{ id:“gap”, label:“📊 Gaps” },
+];
+
+return (
+<div className="ai-panel">
+<div className="ai-hd">
+<div><span className="ai-title">{t(“aiTitle”)}</span><span className="ai-badge">LIVE</span></div>
+<div style={{ fontSize:11,color:“var(–g400)”,marginTop:3 }}>{t(“aiSubtitle”)} · {c.field}</div>
+</div>
+<div className="ai-tabs">
+{tabs.map(tb => <div key={tb.id} className={`ai-tab${aiTab===tb.id?" active":""}`} onClick={()=>setAiTab(tb.id)}>{tb.label}</div>)}
+</div>
+
+```
+  {/* CHAT */}
+  {aiTab==="chat" && (
+    <div style={{ flex:1,display:"flex",flexDirection:"column" }}>
+      <div className="ai-sec">
+        <div className="ai-sec-lbl">{t("suggestedActions")}</div>
+        {[c.boneAnalysis?t("runComparativeMorphology"):t("createCaseOverview"), t("requestIsotopeAnalysis"), t("findLiterature"), t("generateMethodology"), t("identifyGaps")].map((a,i) => (
+          <div key={i} style={{ padding:"6px 0",borderBottom:"1px solid var(--g100)",fontSize:12,color:"var(--g700)",cursor:"pointer",transition:"color .14s" }}
+            onMouseEnter={e=>e.target.style.color="var(--navy)"} onMouseLeave={e=>e.target.style.color="var(--g700)"}
+            onClick={()=>{ setQuery(a); setAiTab("chat"); }}>{a}</div>
+        ))}
+      </div>
+      <div className="ai-sec">
+        <div className="ai-sec-lbl">{t("keyThemes")}</div>
+        <div>{c.tags.map(tg=><span key={tg} className="ai-chip chip-b">#{tg}</span>)}{c.boneAnalysis&&<span className="ai-chip chip-g">🦴</span>}{c.medicalReview&&<span className="ai-chip chip-a">🏥</span>}</div>
+      </div>
+      {loading && <div className="ai-sec"><div className="ai-txt" style={{ color:"var(--g400)",fontStyle:"italic" }}>{t("analyzing")}</div></div>}
+      {aiReply && <div className="ai-sec result-box green" style={{ margin:"0 18px 12px",borderLeft:"3px solid var(--green)" }}><div className="ai-sec-lbl">{t("aiResponse")}</div><div className="ai-txt">{aiReply}</div></div>}
+      <div className="ai-inp-area" style={{ marginTop:"auto" }}>
+        <textarea className="ai-inp" placeholder={t("aiPlaceholder")} value={query}
+          onChange={e=>setQuery(e.target.value)} onKeyDown={e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();askAI();} }} />
+        <button className="ai-send" onClick={askAI} disabled={loading}>
+          {loading?<><span className="spinner"/>thinking…</>:t("askAI")}
+        </button>
+      </div>
+    </div>
+  )}
+
+  {/* CASE ANALYSIS */}
+  {aiTab==="analysis" && (
+    <div style={{ flex:1,overflow:"auto" }}>
+      <div className="ai-sec">
+        <div className="ai-sec-lbl">🔍 Full Case Analysis</div>
+        <div className="ai-txt" style={{ marginBottom:10 }}>Scans all case data: notes, tags, status, bone/medical findings, and produces a structured research report.</div>
+        <button className="ai-send" onClick={runCaseAnalysis} disabled={caseLoading}>
+          {caseLoading?<><span className="spinner"/>Analyzing…</>:"▶ Run Analysis"}
+        </button>
+      </div>
+      {caseAnalysis && (
+        <>
+          {caseAnalysis.summary && <div className="ai-sec"><div className="ai-sec-lbl">Summary</div><div className="ai-txt">{caseAnalysis.summary}</div></div>}
+          {caseAnalysis.publicationScore !== undefined && (
+            <div className="ai-sec">
+              <div className="ai-sec-lbl">Publication Readiness</div>
+              <div style={{ display:"flex",alignItems:"center",gap:14 }}>
+                <PublicationScore score={caseAnalysis.publicationScore} />
+                <div style={{ fontSize:12,color:"var(--g700)",lineHeight:1.5 }}>Score based on data completeness, methodology, and literature coverage.</div>
+              </div>
+            </div>
+          )}
+          {caseAnalysis.missingData?.length > 0 && (
+            <div className="ai-sec"><div className="ai-sec-lbl">⚠ Missing Data</div>
+              {caseAnalysis.missingData.map((d,i)=><div key={i} style={{ display:"flex",gap:6,padding:"4px 0",fontSize:12,color:"var(--rose)" }}><span>•</span>{d}</div>)}</div>
+          )}
+          {caseAnalysis.methodology && <div className="ai-sec"><div className="ai-sec-lbl">📐 Methodology</div><div className="ai-txt">{caseAnalysis.methodology}</div></div>}
+          {caseAnalysis.literatureGaps?.length > 0 && (
+            <div className="ai-sec"><div className="ai-sec-lbl">📚 Literature Gaps</div>
+              {caseAnalysis.literatureGaps.map((g,i)=><div key={i} style={{ display:"flex",gap:6,padding:"4px 0",fontSize:12,color:"var(--g700)" }}><span>•</span>{g}</div>)}</div>
+          )}
+          {caseAnalysis.nextSteps?.length > 0 && (
+            <div className="ai-sec"><div className="ai-sec-lbl">✅ Next Steps</div>
+              {caseAnalysis.nextSteps.map((s,i)=><div key={i} style={{ display:"flex",gap:8,padding:"4px 0",fontSize:12,color:"var(--g700)",alignItems:"flex-start" }}><span style={{ color:"var(--green)",fontWeight:700,flexShrink:0 }}>{i+1}.</span>{s}</div>)}</div>
+          )}
+          {caseAnalysis.ethicsFlags?.length > 0 && (
+            <div className="ai-sec" style={{ background:"#fef2f2" }}><div className="ai-sec-lbl" style={{ color:"var(--rose)" }}>⚠ Ethics Flags</div>
+              {caseAnalysis.ethicsFlags.map((f,i)=><div key={i} style={{ fontSize:12,color:"var(--rose)",padding:"2px 0" }}>• {f}</div>)}</div>
+          )}
+        </>
+      )}
+    </div>
+  )}
+
+  {/* OSTEOLOGY */}
+  {aiTab==="osteo" && (
+    <div style={{ flex:1,overflow:"auto",padding:"14px 18px" }}>
+      <div className="ai-sec-lbl" style={{ marginBottom:10 }}>🦴 Skeletal Measurement Input</div>
+      <div className="osteo-form">
+        {[
+          { key:"femurLength", label:"Femur Length (mm)" },
+          { key:"humerusLength", label:"Humerus Length (mm)" },
+          { key:"pelvisMorphology", label:"Pelvis Morphology" },
+          { key:"cranialTraits", label:"Cranial Traits" },
+          { key:"dentalWear", label:"Dental Wear" },
+          { key:"epiphysealFusion", label:"Epiphyseal Fusion" },
+        ].map(f => (
+          <div key={f.key} className="osteo-field">
+            <div className="osteo-lbl">{f.label}</div>
+            <input className="osteo-inp" placeholder="Enter value…" value={osteoForm[f.key]}
+              onChange={e=>setOsteoForm(prev=>({...prev,[f.key]:e.target.value}))} />
+          </div>
+        ))}
+      </div>
+      <div className="osteo-field" style={{ marginBottom:12 }}>
+        <div className="osteo-lbl">Pathology Notes</div>
+        <textarea className="osteo-inp" placeholder="Describe any pathological observations…" rows={2} style={{ resize:"none" }}
+          value={osteoForm.pathologyNotes} onChange={e=>setOsteoForm(prev=>({...prev,pathologyNotes:e.target.value}))} />
+      </div>
+      <button className="ai-send" onClick={runOsteo} disabled={osteoLoading}>
+        {osteoLoading?<><span className="spinner"/>Analyzing Skeleton…</>:"🦴 Run Osteological Analysis"}
+      </button>
+      {osteoResult && (
+        <div style={{ marginTop:14 }}>
+          <div className="ai-sec-lbl" style={{ marginBottom:10 }}>Analysis Results</div>
+          <div style={{ display:"flex",flexDirection:"column",gap:5,marginBottom:12 }}>
+            <ConfidenceBar label="Age Estimate" value={osteoResult.ageConfidence||75} color="#2a7a50" />
+            <ConfidenceBar label="Sex Estimate" value={osteoResult.sexConfidence||80} color="#2563eb" />
+            <ConfidenceBar label="Stature" value={osteoResult.statureConfidence||70} color="#d97706" />
+            <ConfidenceBar label="Overall" value={osteoResult.overallConfidence||72} color="#7c3aed" />
+          </div>
+          {[
+            { label:"Age Range", val:osteoResult.ageRange },
+            { label:"Biological Sex", val:osteoResult.biologicalSex },
+            { label:"Stature Estimate", val:osteoResult.statureEstimate },
+          ].filter(r=>r.val).map(r => (
+            <div key={r.label} style={{ display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:"1px solid var(--g100)",fontSize:12 }}>
+              <span style={{ color:"var(--g600)" }}>{r.label}</span>
+              <span style={{ color:"var(--navy)",fontWeight:700 }}>{r.val}</span>
+            </div>
+          ))}
+          {osteoResult.ancestryNotes && <div className="result-box blue" style={{ marginTop:10 }}><strong>Ancestry:</strong> {osteoResult.ancestryNotes}</div>}
+          {osteoResult.traumaFindings?.length > 0 && (
+            <div style={{ marginTop:10 }}><div className="ai-sec-lbl">Trauma</div>{osteoResult.traumaFindings.map((f,i)=><div key={i} style={{ fontSize:11.5,color:"var(--rose)",padding:"3px 0" }}>• {f}</div>)}</div>
+          )}
+          {osteoResult.labRecommendations?.length > 0 && (
+            <div style={{ marginTop:10 }}><div className="ai-sec-lbl">Lab Recommendations</div>{osteoResult.labRecommendations.map((r,i)=><div key={i} style={{ fontSize:11.5,color:"var(--green)",padding:"3px 0" }}>• {r}</div>)}</div>
+          )}
+          {osteoResult.interpretation && <div className="result-box green" style={{ marginTop:10 }}>{osteoResult.interpretation}</div>}
+        </div>
+      )}
+    </div>
+  )}
+
+  {/* MEDICAL AI */}
+  {aiTab==="medical" && (
+    <div style={{ flex:1,overflow:"auto",padding:"14px 18px" }}>
+      <div className="ai-sec-lbl" style={{ marginBottom:10 }}>🏥 Clinical Information</div>
+      {[
+        { key:"symptoms", label:"Chief Complaint / Symptoms", placeholder:"e.g. chest pain, dyspnea, fever…", textarea:true },
+        { key:"age", label:"Patient Age", placeholder:"e.g. 45" },
+        { key:"sex", label:"Biological Sex", placeholder:"Male / Female" },
+        { key:"clinicalHistory", label:"Clinical History", placeholder:"Relevant past medical history…", textarea:true },
+        { key:"labFindings", label:"Lab / Imaging Findings", placeholder:"Relevant test results…", textarea:true },
+      ].map(f => (
+        <div key={f.key} className="osteo-field" style={{ gridColumn:"1/-1",marginBottom:8 }}>
+          <div className="osteo-lbl">{f.label}</div>
+          {f.textarea
+            ? <textarea className="osteo-inp" placeholder={f.placeholder} rows={2} style={{ resize:"none",width:"100%" }}
+                value={medForm[f.key]} onChange={e=>setMedForm(prev=>({...prev,[f.key]:e.target.value}))} />
+            : <input className="osteo-inp" placeholder={f.placeholder} value={medForm[f.key]}
+                onChange={e=>setMedForm(prev=>({...prev,[f.key]:e.target.value}))} />
+          }
+        </div>
+      ))}
+      <button className="ai-send" onClick={runMedical} disabled={medLoading}>
+        {medLoading?<><span className="spinner"/>Analyzing…</>:"🏥 Run Medical Analysis"}
+      </button>
+      {medResult && (
+        <div style={{ marginTop:14 }}>
+          {medResult.urgencyLevel && (
+            <div style={{ marginBottom:10 }}>
+              <span className={`urgency-badge urgency-${medResult.urgencyLevel.toLowerCase()}`}>
+                {medResult.urgencyLevel==="Emergency"?"🚨":medResult.urgencyLevel==="Urgent"?"⚠️":"✅"} {medResult.urgencyLevel}
+              </span>
+            </div>
+          )}
+          {medResult.primaryDiagnosis && <div className="result-box blue"><strong>Primary Dx:</strong> {medResult.primaryDiagnosis}</div>}
+          {medResult.differentials?.length > 0 && (
+            <div style={{ marginTop:10 }}><div className="ai-sec-lbl">Differential Diagnoses</div>
+              {medResult.differentials.map((d,i)=><div key={i} style={{ fontSize:12,color:"var(--g700)",padding:"3px 0" }}>{i+1}. {d}</div>)}</div>
+          )}
+          {medResult.symptomAnalysis && <div className="result-box green" style={{ marginTop:10 }}>{medResult.symptomAnalysis}</div>}
+          {medResult.recommendedTests?.length > 0 && (
+            <div style={{ marginTop:10 }}><div className="ai-sec-lbl">Recommended Tests</div>
+              {medResult.recommendedTests.map((t,i)=><div key={i} style={{ fontSize:12,color:"var(--navy)",padding:"3px 0" }}>• {t}</div>)}</div>
+          )}
+          {medResult.residentQuiz && (
+            <div className="result-box amber" style={{ marginTop:10 }}><div className="ai-sec-lbl" style={{ color:"#92400e",marginBottom:5 }}>🎓 Teaching Question</div>{medResult.residentQuiz}</div>
+          )}
+          {medResult.confidenceScore !== undefined && (
+            <div style={{ marginTop:10 }}><ConfidenceBar label="AI Confidence" value={medResult.confidenceScore} /></div>
+          )}
+        </div>
+      )}
+    </div>
+  )}
+
+  {/* RESEARCH GAP */}
+  {aiTab==="gap" && (
+    <div style={{ flex:1,overflow:"auto" }}>
+      <div className="ai-sec">
+        <div className="ai-sec-lbl">📊 Research Gap Finder</div>
+        <div className="ai-txt" style={{ marginBottom:10 }}>Analyzes your case notes and description to identify hypothesis gaps, data deficiencies, and publication opportunities.</div>
+        <button className="ai-send" onClick={runGap} disabled={gapLoading}>
+          {gapLoading?<><span className="spinner"/>Scanning…</>:"📊 Scan Research Gaps"}
+        </button>
+      </div>
+      {gapResult && (
+        <>
+          {(gapResult.strengthScore !== undefined || gapResult.weaknessScore !== undefined) && (
+            <div className="ai-sec">
+              <div className="ai-sec-lbl">Research Scores</div>
+              <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                <ConfidenceBar label="Strength" value={gapResult.strengthScore||0} color="#2a7a50" />
+                <ConfidenceBar label="Weakness" value={gapResult.weaknessScore||0} color="#e11d48" />
+              </div>
+            </div>
+          )}
+          {gapResult.missingHypotheses?.length > 0 && (
+            <div className="ai-sec"><div className="ai-sec-lbl">❓ Missing Hypotheses</div>
+              {gapResult.missingHypotheses.map((h,i)=><div key={i} style={{ fontSize:12,color:"var(--g700)",padding:"4px 0",borderBottom:"1px solid var(--g100)" }}>• {h}</div>)}</div>
+          )}
+          {gapResult.dataInsufficiencies?.length > 0 && (
+            <div className="ai-sec"><div className="ai-sec-lbl">⚠ Data Insufficiencies</div>
+              {gapResult.dataInsufficiencies.map((d,i)=><div key={i} style={{ fontSize:12,color:"var(--amber)",padding:"3px 0" }}>• {d}</div>)}</div>
+          )}
+          {gapResult.publishableSection && <div className="ai-sec"><div className="ai-sec-lbl">✅ Most Publishable</div><div className="result-box green">{gapResult.publishableSection}</div></div>}
+          {gapResult.recommendedJournals?.length > 0 && (
+            <div className="ai-sec"><div className="ai-sec-lbl">📰 Recommended Journals</div>
+              {gapResult.recommendedJournals.map((j,i)=><div key={i} style={{ fontSize:12,color:"var(--blue)",padding:"3px 0",fontWeight:500 }}>• {j}</div>)}</div>
+          )}
+          {gapResult.keyRecommendation && (
+            <div className="ai-sec" style={{ background:"#eff6ff" }}><div className="ai-sec-lbl">💡 Key Recommendation</div><div className="ai-txt" style={{ fontWeight:600 }}>{gapResult.keyRecommendation}</div></div>
+          )}
+        </>
+      )}
+    </div>
+  )}
+</div>
+```
+
+);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CASE DETAIL TABS (unchanged structure, now passes user to AIPanel)
+// ═══════════════════════════════════════════════════════════════════════════════
+function OverviewTab({ c }) {
+const { t, lang } = useLang();
+const targetLang = lang === “en” ? “tr” : “en”;
+return (
+<div>
+<div className="ov-grid">
+<div className="ov-card full"><div className="ov-lbl">{t(“description”)}</div><div className="ov-txt">{c.description}</div></div>
+<div className="ov-card"><div className="ov-lbl">{t(“workspace”)}</div><div className="ov-txt">{c.workspace}</div></div>
+<div className="ov-card"><div className="ov-lbl">{t(“fieldDiscipline”)}</div><div className="ov-txt">{c.field}</div></div>
+<div className="ov-card"><div className="ov-lbl">{t(“principalInvestigator”)}</div><div className="ov-txt">{c.author}</div></div>
+<div className="ov-card"><div className="ov-lbl">{t(“caseOpened”)}</div><div className="ov-txt">{c.date}</div></div>
+<div className="ov-card"><div className="ov-lbl">{t(“progress”)}</div>
+<div style={{ marginTop:6 }}><div className=“prog-bar” style={{ height:7 }}><div className=“prog-fill” style={{ width:`${c.progress}%` }} /></div><div className=“ov-txt” style={{ marginTop:5 }}>{c.progress}{t(“progressComplete”)}</div></div>
+</div>
+<div className="ov-card"><div className="ov-lbl">{t(“status”)}</div><div style={{ marginTop:4 }}><StatusPill status={c.status} /></div></div>
+</div>
+<div className=“ov-lbl” style={{ marginBottom:10 }}>{t(“labNotes”)}</div>
+{c.notes.length===0 ? <div className="empty">{t(“noNotes”)}</div> : c.notes.map((n,i) => (
+<div key={i} className="note-item">
+<div><span className="note-auth">{n.author}</span><span className="note-time">{n.time}</span></div>
+<div className="note-txt">{n.text}</div>
+<TranslateNoteBtn text={n.text} targetLang={targetLang} />
+</div>
+))}
+</div>
+);
+}
+
+function BoneTab({ ba }) {
+const { t } = useLang();
+if (!ba) return <div className="empty">{t(“noBoneData”)}</div>;
+return (
+<div>
+<div className="bone-grid">
+<div className="bone-card"><div className="bc-lbl">{t(“statureEstimate”)}</div><div className="bc-val">{ba.stature_estimate}</div></div>
+<div className="bone-card"><div className="bc-lbl">{t(“ageEstimate”)}</div><div className="bc-val">{ba.age_estimate}</div></div>
+<div className="bone-card"><div className="bc-lbl">{t(“sexEstimation”)}</div><div className="bc-val">{ba.sex_estimate}</div>
+<div className="conf-bar"><div className=“conf-fill-bone” style={{ width:`${ba.sex_confidence}%` }} /></div>
+<div style={{ fontSize:10.5,color:“var(–g600)”,marginTop:4 }}>{t(“confidence”)}: {ba.sex_confidence}%</div>
+</div>
+<div className="bone-card"><div className="bc-lbl">{t(“taphonomyNotes”)}</div><div style={{ fontSize:12,color:“var(–g700)”,lineHeight:1.6 }}>{ba.taphonomy}</div></div>
+<div className="bone-card full"><div className="bc-lbl">{t(“skeletalInventory”)}</div>
+<div className="skel-grid">{Object.entries(ba.skeletal_inventory).map(([k,v])=><div key={k} className={`sk-chip ${v===true?"sk-y":v===false?"sk-n":"sk-p"}`}>{k}</div>)}</div>
+</div>
+<div className="bone-card full"><div className="bc-lbl">{t(“traumaMarkers”)}</div>
+{ba.trauma_markers.length===0 ? <div style={{ fontSize:12.5,color:“var(–g400)” }}>{t(“noTrauma”)}</div>
+: <ul className="t-list">{ba.trauma_markers.map((tm,i)=><li key={i} className="t-item"><span className="t-dot t-rose"/>{tm}</li>)}</ul>}
+</div>
+{ba.pathology.length>0&&<div className="bone-card full"><div className="bc-lbl">{t(“pathologyObs”)}</div>
+<ul className="t-list">{ba.pathology.map((p,i)=><li key={i} className="t-item"><span className="t-dot t-amber"/>{p}</li>)}</ul></div>}
+<div className=“bone-card full” style={{ background:“linear-gradient(135deg,#f0f9ff,#e8f5ee)” }}>
+<div className="bc-lbl">{t(“aiOsteologicalSummary”)}</div>
+<div style={{ fontSize:13,color:“var(–navy)”,lineHeight:1.7 }}>{ba.ai_summary}</div>
+</div>
+</div>
+</div>
+);
+}
+
+function MedicalTab({ mr }) {
+const { t } = useLang();
+if (!mr) return <div className="empty">{t(“noMedicalData”)}</div>;
+const sections = [
+{ ico:“🫁”, lbl:t(“anatomyNotes”), val:mr.anatomy_notes },
+{ ico:“🩻”, lbl:t(“radiology”), val:mr.radiology },
+{ ico:“🧫”, lbl:t(“pathologyObsMed”), val:mr.pathology_obs },
+{ ico:“🦴”, lbl:t(“fractureAnalysis”), val:mr.fracture_analysis },
+{ ico:“⚠️”, lbl:t(“trauma”), val:mr.trauma },
+{ ico:“🔬”, lbl:t(“diffDiagnosis”), val:mr.diff_diagnosis },
+{ ico:“📋”, lbl:t(“residentNotes”), val:mr.resident_notes },
+{ ico:“🤖”, lbl:t(“aiMedicalReasoning”), val:mr.ai_reasoning, highlight:true },
+];
+return (
+<div className="med-grid">
+{sections.map(s=>(
+<div key={s.lbl} className={`med-card${s.highlight?" full":""}`} style={s.highlight?{background:“linear-gradient(135deg,#f0f9ff,#e8f5ee)”}:{}}>
+<div className="med-lbl">{s.ico} {s.lbl}</div><div className="med-txt">{s.val}</div>
+</div>
+))}
+</div>
+);
+}
+
+function CaseDetail({ c, onBack, user }) {
+const { t, lang } = useLang();
+const [tab, setTab] = useState(“overview”);
+const targetLang = lang === “en” ? “tr” : “en”;
+const allTabs = [
+{ id:“overview”, label:t(“tabOverview”), show:true },
+{ id:“notes”, label:t(“tabNotes”), show:true },
+{ id:“bone”, label:t(“tabBone”), show:!!c.boneAnalysis },
+{ id:“medical”, label:t(“tabMedical”), show:!!c.medicalReview },
+{ id:“literature”, label:t(“tabLiterature”), show:true },
+{ id:“timeline”, label:t(“tabTimeline”), show:true },
+].filter(tb=>tb.show);
+return (
+<div className="case-detail-wrap">
+<div className="case-main">
+<button className="back-btn" onClick={onBack}>{t(“backToCases”)}</button>
+<div className="case-title-lg">{c.title}</div>
+<div className="case-meta-row"><span>📁 {c.workspace}</span><span>👤 {c.author}</span><span>📅 {c.date}</span><StatusPill status={c.status}/></div>
+<div className="case-tags-row">{c.tags.map(tg=><span key={tg} className="tag-chip">#{tg}</span>)}</div>
+<div className="tabs">{allTabs.map(tb=><div key={tb.id} className={`tab${tab===tb.id?" active":""}`} onClick={()=>setTab(tb.id)}>{tb.label}</div>)}</div>
+{tab===“overview”&&<OverviewTab c={c}/>}
+{tab===“notes”&&(
+<div>{c.notes.length===0?<div className="empty">{t(“noNotes”)}</div>:c.notes.map((n,i)=>(
+<div key={i} className="note-item">
+<div><span className="note-auth">{n.author}</span><span className="note-time">{n.time}</span></div>
+<div className="note-txt">{n.text}</div>
+<TranslateNoteBtn text={n.text} targetLang={targetLang}/>
+</div>
+))}</div>
+)}
+{tab===“bone”&&<BoneTab ba={c.boneAnalysis}/>}
+{tab===“medical”&&<MedicalTab mr={c.medicalReview}/>}
+{tab===“literature”&&<div className="empty">{t(“literatureMsg”)}</div>}
+{tab===“timeline”&&(
+<div>{[{date:c.date,label:t(“caseOpenedEvent”),desc:`${t("openedBy")} ${c.author}`},…c.notes.map(n=>({date:n.time,label:t(“noteAdded”),desc:n.text}))].map((ev,i,arr)=>(
+<div key={i} style={{ display:“flex”,gap:14,marginBottom:16 }}>
+<div style={{ display:“flex”,flexDirection:“column”,alignItems:“center” }}>
+<div style={{ width:10,height:10,borderRadius:“50%”,background:“var(–green)”,marginTop:3,flexShrink:0 }}/>
+{i<arr.length-1&&<div style={{ width:2,flex:1,background:“var(–g200)”,margin:“4px 0” }}/>}
+</div>
+<div style={{ paddingBottom:8 }}>
+<div style={{ fontSize:11,color:“var(–g400)”,marginBottom:2 }}>{ev.date}</div>
+<div style={{ fontSize:13,fontWeight:600,color:“var(–navy)” }}>{ev.label}</div>
+<div style={{ fontSize:12.5,color:“var(–g700)”,marginTop:2 }}>{ev.desc}</div>
+</div>
+</div>
+))}</div>
+)}
+</div>
+<AIPanel c={c} user={user}/>
+</div>
+);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PAGES
+// ═══════════════════════════════════════════════════════════════════════════════
+function DashboardPage({ onSelect, user }) {
+const { t } = useLang();
+const userCases = CASES.filter(c => !user.faculty || c.faculty === user.faculty || true);
+return (
+<div>
+<div className="sec-title">{t(“dashTitle”)}</div>
+<div className="sec-sub">{t(“dashSub”)} · Welcome, {user.name} ({user.role})</div>
+<div className="stats-grid">
+{[
+{ ico:“📂”, lbl:t(“totalCases”), val:CASES.length, sub:t(“acrossAllWs”) },
+{ ico:“🔓”, lbl:t(“open”), val:CASES.filter(c=>c.status===“open”).length, sub:t(“activeResearch”) },
+{ ico:“🔍”, lbl:t(“inReview”), val:CASES.filter(c=>c.status===“in-review”).length, sub:t(“underReview”) },
+{ ico:“✅”, lbl:t(“closed”), val:CASES.filter(c=>c.status===“closed”).length, sub:t(“completed”) },
+].map(s=>(
+<div key={s.lbl} className="stat-c"><div className="stat-ico">{s.ico}</div><div className="stat-lbl">{s.lbl}</div><div className="stat-val">{s.val}</div><div className="stat-sub">{s.sub}</div></div>
+))}
+</div>
+{/* Role-specific widget */}
+{(user.role===“Faculty” || user.role===“Lab Researcher”) && (
+<div className=“card” style={{ marginBottom:18,padding:“14px 18px” }}>
+<div style={{ display:“flex”,alignItems:“center”,gap:10,marginBottom:8 }}>
+<span style={{ fontSize:16 }}>👩‍🏫</span>
+<span style={{ fontWeight:700,fontSize:13.5,color:“var(–navy)” }}>Faculty Quick Actions</span>
+</div>
+<div style={{ display:“flex”,gap:10,flexWrap:“wrap” }}>
+{[“Create New Case”,“Generate Class Report”,“Export Data”,“Send AI Summary”].map(a=>(
+<button key={a} className=“tbtn tbtn-navy” style={{ fontSize:12 }}>{a}</button>
+))}
+</div>
+</div>
+)}
+{user.role===“Student” && (
+<div className=“card” style={{ marginBottom:18,padding:“14px 18px”,background:“linear-gradient(135deg,#f0f9ff,#e8f5ee)”,border:“1px solid #bfdbfe” }}>
+<div style={{ fontWeight:700,fontSize:13,color:“var(–navy)”,marginBottom:6 }}>🎓 My Assignments</div>
+<div style={{ fontSize:12.5,color:“var(–g700)” }}>2 pending assignments · Next due: Bone Analysis Report (Apr 20)</div>
+</div>
+)}
+<div className="dash-wide">
+<div className="card">
+<div className="card-hd"><span className="card-t">{t(“recentCases”)}</span><span className="card-lk">{t(“viewAll”)}</span></div>
+<div style={{ padding:“4px 0” }}>
+{CASES.slice(0,4).map(c=>(
+<div key={c.id} onClick={()=>onSelect(c)} style={{ display:“flex”,alignItems:“center”,gap:12,padding:“10px 18px”,cursor:“pointer”,borderBottom:“1px solid var(–g100)”,transition:“background .13s” }}
+onMouseEnter={e=>e.currentTarget.style.background=“var(–g50)”} onMouseLeave={e=>e.currentTarget.style.background=””}>
+<div style={{ flex:1,minWidth:0 }}>
+<div style={{ fontSize:13,fontWeight:600,color:“var(–navy)”,whiteSpace:“nowrap”,overflow:“hidden”,textOverflow:“ellipsis” }}>{c.title}</div>
+<div style={{ fontSize:11,color:“var(–g600)”,marginTop:1 }}>{c.field}</div>
+</div>
+<StatusPill status={c.status}/><ProgressBar pct={c.progress}/>
+</div>
+))}
+</div>
+</div>
+<div className="card">
+<div className="card-hd"><span className="card-t">{t(“recentActivity”)}</span></div>
+<div style={{ padding:“4px 18px” }}>
+{ACTIVITIES.map((a,i)=>(
+<div key={i} className="activity-item"><div className="a-dot"/><div><div className="a-txt">{a.text}</div><div className="a-time">{a.time}</div></div></div>
+))}
+</div>
+</div>
+</div>
+<div className="dash-grid">
+<div className="card"><div className="card-hd"><span className="card-t">{t(“heatmapTitle”)}</span><span className="card-lk">{t(“thisSemester”)}</span></div><div style={{ padding:“14px 18px” }}><Heatmap/></div></div>
+<div className="card"><div className="card-hd"><span className="card-t">{t(“activeWorkspaces”)}</span></div>
+<div style={{ padding:“4px 0” }}>{WORKSPACES.slice(0,4).map(w=>(
+<div key={w.id} style={{ display:“flex”,alignItems:“center”,gap:10,padding:“9px 18px”,borderBottom:“1px solid var(–g100)” }}>
+<span style={{ fontSize:16 }}>{w.icon}</span>
+<div style={{ flex:1 }}><div style={{ fontSize:12.5,fontWeight:600,color:“var(–navy)” }}>{w.name}</div><div style={{ fontSize:11,color:“var(–g400)” }}>{w.cases} {t(“casesSuffix”)} · {w.members} {t(“membersSuffix”)}</div></div>
+</div>
+))}</div>
+</div>
+</div>
+</div>
+);
+}
+
+function CasesPage({ onSelect }) {
+const { t } = useLang();
+const [filter, setFilter] = useState(“all”);
+const [facFilter, setFacFilter] = useState(“all”);
+const filtered = CASES.filter(c=>filter===“all”||c.status===filter).filter(c=>facFilter===“all”||c.faculty===facFilter);
+return (
+<div>
+<div className="sec-title">{t(“casesTitle”)}</div>
+<div className="sec-sub">{t(“casesSub”)}</div>
+<div className="cases-hd">
+<div className="filter-tabs">
+{[[“all”,t(“filterAll”)],[“open”,t(“filterOpen”)],[“in-review”,t(“filterReview”)],[“closed”,t(“filterClosed”)]].map(([v,l])=>(
+<button key={v} className={`ftab${filter===v?" active":""}`} onClick={()=>setFilter(v)}>{l}</button>
+))}
+</div>
+<select value={facFilter} onChange={e=>setFacFilter(e.target.value)} style={{ padding:“5px 10px”,border:“1px solid var(–g200)”,borderRadius:6,fontSize:12,color:“var(–g700)”,background:“var(–white)”,outline:“none”,cursor:“pointer” }}>
+<option value="all">All Faculties</option>
+{FACULTIES_LIST.map(f=><option key={f} value={f}>{f}</option>)}
+</select>
+<button className=“tbtn tbtn-green” style={{ marginLeft:“auto” }}>{t(“newCase”)}</button>
+</div>
+{filtered.map(c=>(
+<div key={c.id} className=“case-row” onClick={()=>onSelect(c)}>
+<div className="case-id">{c.id}</div>
+<div className="case-info"><div className="case-title-sm">{c.title}</div><div className="case-field">{c.field} · {c.faculty}</div></div>
+<StatusPill status={c.status}/>
+<div className="case-auth">{c.author}</div>
+<ProgressBar pct={c.progress}/>
+</div>
+))}
+</div>
+);
+}
+
+function NewsPage({ user }) {
+const { t } = useLang();
+const news = NEWS_BY_FACULTY[user?.faculty] || NEWS_BY_FACULTY[“default”];
+const allNews = […news, …NEWS_BY_FACULTY[“default”]].filter((n,i,arr)=>arr.findIndex(x=>x.id===n.id)===i);
+return (
+<div>
+<div className="sec-title">{t(“newsTitle”)}</div>
+<div className="sec-sub">{t(“newsSub”)} · Personalized for {user?.faculty}</div>
+<div className="news-grid">
+{allNews.map(n=>(
+<div key={n.id} className="news-c">
+<div className="news-j"><span>{n.journal}</span><span style={{ color:“var(–g400)”,fontWeight:400 }}>{n.date}</span></div>
+<div className="news-title">{n.title}</div>
+<div className="news-importance">💡 {n.importance}</div>
+<div className="news-ft">{n.field}</div>
+<div className="news-case-link">📁 Relevant to: {n.caseLink}</div>
+<div className="news-reads">👁 {n.reads} {t(“reads”)}</div>
+</div>
+))}
+</div>
+</div>
+);
+}
+
+function WorkspacesPage() {
+const { t } = useLang();
+return (
+<div>
+<div className="sec-title">{t(“workspacesTitle”)}</div>
+<div className="sec-sub">{t(“workspacesSub”)}</div>
+<div className="ws-grid">
+{WORKSPACES.map(w=>(
+<div key={w.id} className=“ws-c” style={{ background:`linear-gradient(135deg,${w.color} 0%,${w.color}cc 100%)` }}>
+<div className="ws-ico">{w.icon}</div>
+<div className="ws-name">{w.name}</div>
+<div style={{ fontSize:10,color:“rgba(255,255,255,.4)”,marginBottom:5,fontWeight:600,textTransform:“uppercase”,letterSpacing:”.06em” }}>{w.faculty}</div>
+<div className="ws-st"><span>📁 {w.cases} {t(“casesSuffix”)}</span><span>👥 {w.members} {t(“membersSuffix”)}</span></div>
+</div>
+))}
+</div>
+</div>
+);
+}
+
+function ActivitiesPage() {
+const { t } = useLang();
+return (
+<div>
+<div className="sec-title">{t(“activitiesTitle”)}</div>
+<div className="sec-sub">{t(“activitiesSub”)}</div>
+{ACTIVITIES.map((a,i)=>(
+<div key={i} style={{ background:“var(–white)”,border:“1px solid var(–g200)”,borderRadius:“var(–r)”,padding:“14px 18px”,marginBottom:9,display:“flex”,gap:12,boxShadow:“var(–sh-sm)” }}>
+<div className=“a-dot” style={{ marginTop:5 }}/>
+<div><div className="a-txt">{a.text}</div><div className="a-time">{a.time}</div></div>
+</div>
+))}
+</div>
+);
+}
+
+function ClassroomPage({ user }) {
+const { t } = useLang();
+const [joinCode, setJoinCode] = useState(””);
+const [joinStatus, setJoinStatus] = useState(null);
+const checkJoin = (val) => {
+const up = val.toUpperCase();
+setJoinCode(up);
+setJoinStatus(CLASS_CODES[up] ? “valid” : up.length >= 4 ? “invalid” : null);
+};
+return (
+<div>
+<div className="sec-title">{t(“classroom”)}</div>
+<div className="sec-sub">Class and lab management system · {user?.role}</div>
+{(user?.role === “Faculty” || user?.role === “Lab Researcher”) && (
+<div className=“card” style={{ padding:“18px”,marginBottom:20 }}>
+<div style={{ fontWeight:700,fontSize:13.5,color:“var(–navy)”,marginBottom:12 }}>👩‍🏫 Create a New Class</div>
+<div style={{ display:“grid”,gridTemplateColumns:“1fr 1fr”,gap:10,marginBottom:12 }}>
+{[{ph:“Class Name”},{ph:“Course Code”},{ph:“Semester”},{ph:“Max Students”}].map((f,i)=>(
+<input key={i} className=“auth-inp” placeholder={f.ph} style={{ margin:0 }}/>
+))}
+</div>
+<button className="tbtn tbtn-green">Create Class & Generate Code</button>
+</div>
+)}
+<div className=“join-code-box” style={{ marginBottom:20 }}>
+<div style={{ fontSize:13,fontWeight:600,color:“var(–navy)”,marginBottom:10 }}>🔑 Join a Class with Code</div>
+<input className=“join-code-input” placeholder=“Enter class code…” value={joinCode} onChange={e=>checkJoin(e.target.value)} maxLength={20}/>
+{joinStatus===“valid” && <div className=“auth-hint ok” style={{ marginTop:10,textAlign:“left” }}>✓ <strong>{CLASS_CODES[joinCode]?.name}</strong> — {CLASS_CODES[joinCode]?.faculty}</div>}
+{joinStatus===“invalid” && <div className=“auth-hint err” style={{ marginTop:10,textAlign:“left” }}>Code not recognized</div>}
+<div style={{ fontSize:11,color:“var(–g400)”,marginTop:8 }}>Try: ANTH-301 · FORENSIC-LAB · MED-ANAT-1 · SOC-415 · ARCH-201</div>
+<button className=“tbtn tbtn-navy” style={{ marginTop:12 }} disabled={joinStatus!==“valid”}>Join Class</button>
+</div>
+<div style={{ fontWeight:700,fontSize:14,color:“var(–navy)”,marginBottom:14 }}>Active Classes</div>
+<div className="class-grid">
+{CLASS_DATA.map(cls=>(
+<div key={cls.id} className="class-card">
+<div className="class-code">{cls.code}</div>
+<div className="class-name">{cls.name}</div>
+<div className="class-meta">👩‍🏫 {cls.faculty}</div>
+<div className="class-stats">
+<div className="class-stat">🎓 {cls.students} students</div>
+<div className="class-stat">📋 {cls.assignments} assignments</div>
+<div className="class-stat">📁 {cls.cases.length} cases</div>
+</div>
+<div style={{ marginTop:12,display:“flex”,gap:8 }}>
+<button className=“tbtn tbtn-navy” style={{ fontSize:11.5 }}>Open Class</button>
+<button className=“tbtn” style={{ fontSize:11.5,background:“var(–g100)”,color:“var(–g700)” }}>View Cases</button>
+</div>
+</div>
+))}
+</div>
+</div>
+);
+}
+
+function AnalyticsPage() {
+const { t } = useLang();
+return (
+<div>
+<div className="sec-title">{t(“analytics”)}</div>
+<div className="sec-sub">Institution-wide research & engagement metrics · Live simulation</div>
+{/* KPIs */}
+<div className="analytics-grid">
+{[
+{ val:ANALYTICS.engagement.dau, lbl:“Daily Active Users”, sub:”+12% vs last week” },
+{ val:ANALYTICS.engagement.mau, lbl:“Monthly Active Users”, sub:“across 6 faculties” },
+{ val:`${ANALYTICS.engagement.avgSession}`, lbl:“Avg. Session Duration”, sub:“per researcher” },
+{ val:ANALYTICS.engagement.casesPerUser, lbl:“Cases / User”, sub:“active researchers” },
+{ val:“94%”, lbl:“AI Accuracy Score”, sub:“vs manual review” },
+{ val:ANALYTICS.aiUsage[ANALYTICS.aiUsage.length-1].queries, lbl:“AI Queries (Apr)”, sub:”+18% vs Mar” },
+].map(k=>(
+<div key={k.lbl} className="kpi-card"><div className="kpi-val">{k.val}</div><div className="kpi-lbl">{k.lbl}</div><div className="kpi-sub">{k.sub}</div></div>
+))}
+</div>
+<div className="dash-grid">
+{/* Faculty Adoption */}
+<div className="card"><div className="card-hd"><span className="card-t">Faculty Adoption Rate</span></div>
+<div style={{ padding:“14px 18px” }}>
+<div className="bar-chart">
+{ANALYTICS.facultyAdoption.map(f=>(
+<div key={f.name} className="bar-row">
+<div className="bar-label">{f.name}</div>
+<div className="bar-track"><div className=“bar-fill” style={{ width:`${f.pct}%` }}><span className="bar-fill-text">{f.pct}%</span></div></div>
+<div className="bar-val">{f.users}</div>
+</div>
+))}
+</div>
+</div>
+</div>
+{/* AI Usage over time */}
+<div className="card"><div className="card-hd"><span className="card-t">AI Query Volume</span><span className="card-lk">6 months</span></div>
+<div style={{ padding:“14px 18px” }}>
+<div className="bar-chart">
+{ANALYTICS.aiUsage.map(m=>(
+<div key={m.month} className="bar-row">
+<div className="bar-label">{m.month}</div>
+<div className="bar-track"><div className=“bar-fill” style={{ width:`${(m.queries/1200)*100}%`,background:“linear-gradient(90deg,var(–green),var(–green-l))” }}><span className="bar-fill-text">{m.queries}</span></div></div>
+<div className=“bar-val” style={{ fontSize:10 }}>{m.queries}</div>
+</div>
+))}
+</div>
+</div>
+</div>
+</div>
+{/* Top Research Themes */}
+<div className=“card” style={{ marginBottom:18 }}>
+<div className="card-hd"><span className="card-t">Most Active Research Themes</span></div>
+<div style={{ padding:“14px 18px” }}>
+<div className="bar-chart">
+{ANALYTICS.topThemes.map(th=>(
+<div key={th.theme} className="bar-row">
+<div className="bar-label">{th.theme}</div>
+<div className="bar-track"><div className=“bar-fill” style={{ width:`${(th.count/250)*100}%`,background:“linear-gradient(90deg,#7c3aed,#a855f7)” }}><span className="bar-fill-text">{th.count}</span></div></div>
+<div className="bar-val">{th.count}</div>
+</div>
+))}
+</div>
+</div>
+</div>
+{/* Cross-disciplinary heatmap teaser */}
+<div className="card">
+<div className="card-hd"><span className="card-t">Cross-disciplinary Collaboration Heatmap</span><span className="card-lk">This semester</span></div>
+<div style={{ padding:“18px” }}>
+<div style={{ display:“grid”,gridTemplateColumns:`repeat(${FACULTIES_LIST.slice(0,6).length+1},1fr)`,gap:3,overflowX:“auto” }}>
+<div style={{ fontSize:9,color:“var(–g400)”,gridColumn:“1”,display:“flex”,alignItems:“flex-end”,paddingBottom:4 }}></div>
+{FACULTIES_LIST.slice(0,6).map(f=><div key={f} style={{ fontSize:9,color:“var(–g600)”,fontWeight:600,textAlign:“center”,padding:“0 2px”,lineHeight:1.2 }}>{f.slice(0,4)}</div>)}
+{FACULTIES_LIST.slice(0,6).map((fa,i)=>[
+<div key={fa} style={{ fontSize:9,color:“var(–g600)”,fontWeight:600,display:“flex”,alignItems:“center”,justifyContent:“flex-end”,paddingRight:4 }}>{fa.slice(0,6)}</div>,
+…FACULTIES_LIST.slice(0,6).map((_,j)=>{
+const v = i===j ? 100 : Math.floor(Math.random()*70)+10;
+const alpha = v/100;
+return <div key={j} style={{ height:24,borderRadius:4,background:`rgba(15,34,64,${alpha*0.7})`,display:“flex”,alignItems:“center”,justifyContent:“center” }}>
+<span style={{ fontSize:8,color:`rgba(255,255,255,${alpha>0.4?0.9:0})`,fontWeight:700 }}>{v}</span>
+</div>;
+})
+])}
+</div>
+<div style={{ fontSize:11,color:“var(–g400)”,marginTop:10 }}>Values indicate collaboration score (0–100) between faculties based on shared cases, joint publications, and cross-team AI usage.</div>
+</div>
+</div>
+</div>
+);
+}
+
+function PlaceholderPage({ page }) {
+const { t } = useLang();
+const icons = { modules:“🧩”,settings:“⚙️”,“ai-insights”:“🤖” };
+const labels = { modules:t(“modules”),settings:t(“settings”),“ai-insights”:t(“aiInsights”) };
+return (
+<div className=“empty” style={{ paddingTop:80 }}>
+<div style={{ fontSize:40,marginBottom:12 }}>{icons[page]||“📄”}</div>
+<div style={{ fontSize:16,fontWeight:600,color:“var(–navy)”,marginBottom:6 }}>{labels[page]||page} — {t(“comingSoon”)}</div>
+<div style={{ fontSize:13 }}>{t(“underDevelopment”)}</div>
+</div>
+);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ROOT APP
+// ═══════════════════════════════════════════════════════════════════════════════
+function App() {
+const [user, setUser] = useState(null);
+const [page, setPage] = useState(“dashboard”);
+const [selectedCase, setSelectedCase] = useState(null);
+const [lang, setLang] = useState(“en”);
+const [sidebarOpen, setSidebarOpen] = useState(true);
+
+const t = (key) => TRANSLATIONS[lang][key] || key;
+
+const navItems = [
+{ id:“dashboard”, icon:“◈”, labelKey:“dashboard” },
+{ id:“cases”, icon:“📁”, labelKey:“cases”, badge:CASES.filter(c=>c.status===“open”).length },
+{ id:“activities”, icon:“⚡”, labelKey:“activities” },
+{ id:“workspaces”, icon:“🗂”, labelKey:“workspaces” },
+{ id:“classroom”, icon:“🎓”, labelKey:“classroom” },
+{ id:“analytics”, icon:“📊”, labelKey:“analytics” },
+{ id:“ai-insights”, icon:“🤖”, labelKey:“aiInsights” },
+{ id:“news”, icon:“📰”, labelKey:“academicNews” },
+{ id:“modules”, icon:“🧩”, labelKey:“modules” },
+{ id:“settings”, icon:“⚙”, labelKey:“settings” },
+];
+
+const handleSelect = (c) => { setSelectedCase(c); setPage(“case-detail”); };
+const handleNav = (id) => { setPage(id); setSelectedCase(null); };
+
+const titleMap = {
+dashboard:t(“dashboard”),cases:t(“cases”),activities:t(“activities”),
+workspaces:t(“workspaces”),classroom:t(“classroom”),analytics:t(“analytics”),
+“ai-insights”:t(“aiInsights”),news:t(“academicNews”),modules:t(“modules”),settings:t(“settings”),
+“case-detail”:selectedCase?.title||“Case Detail”,
+};
+
+if (!user) return (
+<LangCtx.Provider value={{ lang, t }}>
+<style>{CSS}</style>
+<AuthPage onLogin={(u) => { setUser(u); setPage(“dashboard”); }} />
+</LangCtx.Provider>
+);
+
+const isCaseDetail = page === “case-detail” && selectedCase;
+
+return (
+<LangCtx.Provider value={{ lang, t }}>
+<style>{CSS}</style>
+<div className="app">
+<div className="sidebar-wrap">
+<button className=“sb-toggle” onClick={()=>setSidebarOpen(o=>!o)}>{sidebarOpen?”‹”:”›”}</button>
+<aside className={`sidebar${sidebarOpen?"":" collapsed"}`}>
+<div className=“sb-logo” onClick={()=>handleNav(“dashboard”)}>
+<div className="logo-sq">🔬</div>
+<div className="logo-wordmark"><span className="logo-name">CaseOS</span><span className="logo-tag">Academic OS</span></div>
+</div>
+<div className="sb-sec">
+<div className="sb-sec-lbl">{t(“navigation”)}</div>
+{navItems.map(n=>(
+<button key={n.id} className={`nav-btn${(page===n.id||(page==="case-detail"&&n.id==="cases"))?" active":""}`} onClick={()=>handleNav(n.id)}>
+<span className="ni">{n.icon}</span>{t(n.labelKey)}{n.badge?<span className="nb">{n.badge}</span>:null}
+</button>
+))}
+</div>
+<div className=“sb-sec” style={{ marginTop:8 }}>
+<div className="sb-sec-lbl">{t(“workspaces”)}</div>
+{WORKSPACES.slice(0,4).map(w=>(
+<button key={w.id} className=“nav-btn” onClick={()=>handleNav(“workspaces”)}>
+<span className="ni">{w.icon}</span>
+<span style={{ overflow:“hidden”,textOverflow:“ellipsis”,whiteSpace:“nowrap”,fontSize:12 }}>{w.name}</span>
+</button>
+))}
+</div>
+<div className="lang-switcher">
+<button className={`lang-btn${lang==="en"?" active":""}`} onClick={()=>setLang(“en”)}>🇬🇧 EN</button>
+<button className={`lang-btn${lang==="tr"?" active":""}`} onClick={()=>setLang(“tr”)}>🇹🇷 TR</button>
+</div>
+<div className="sb-foot">
+<div className="user-row">
+<div className="u-av">{user.name.split(” “).map(w=>w[0]).slice(0,2).join(””)}</div>
+<div>
+<div className="u-name">{user.name}</div>
+<div className="u-role">{user.role} · {user.faculty}</div>
+</div>
+</div>
+<button onClick={()=>setUser(null)} style={{ width:“100%”,marginTop:6,padding:“5px 10px”,background:“rgba(255,255,255,.06)”,border:“1px solid rgba(255,255,255,.1)”,borderRadius:6,color:“rgba(255,255,255,.4)”,fontSize:11,cursor:“pointer”,fontFamily:”‘DM Sans’,sans-serif” }}>
+Sign out
+</button>
+</div>
+</aside>
+</div>
+<div className="main">
+<header className="topbar">
+<div className="topbar-title">{titleMap[page]}</div>
+<div className="search-box">🔍 <span>{t(“searchPlaceholder”)}</span></div>
+{page===“cases”&&<button className="tbtn tbtn-green">{t(“newCase”)}</button>}
+<button className="tbtn tbtn-navy">🔔</button>
+</header>
+{isCaseDetail ? (
+<div style={{ flex:1,overflow:“hidden”,display:“flex” }}>
+<CaseDetail c={selectedCase} onBack={()=>{setPage(“cases”);setSelectedCase(null);}} user={user}/>
+</div>
+) : (
+<div className="content">
+{page===“dashboard”&&<DashboardPage onSelect={handleSelect} user={user}/>}
+{page===“cases”&&<CasesPage onSelect={handleSelect}/>}
+{page===“activities”&&<ActivitiesPage/>}
+{page===“workspaces”&&<WorkspacesPage/>}
+{page===“classroom”&&<ClassroomPage user={user}/>}
+{page===“analytics”&&<AnalyticsPage/>}
+{page===“news”&&<NewsPage user={user}/>}
+{(page===“modules”||page===“settings”||page===“ai-insights”)&&<PlaceholderPage page={page}/>}
+</div>
+)}
+</div>
+</div>
+</LangCtx.Provider>
+);
+}
+
+ReactDOM.createRoot(document.getElementById(‘root’)).render(React.createElement(App));
+</script>
+
+</body>
+</html>
