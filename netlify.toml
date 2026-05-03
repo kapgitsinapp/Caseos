@@ -1,0 +1,3 @@
+[build]
+  publish = "caseos-build/dist"
+  command = "cd caseos-build && npm install && npm run build"
