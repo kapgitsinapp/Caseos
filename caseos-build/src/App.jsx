@@ -2,7 +2,23 @@ import { useState, createContext, useContext, useEffect, useRef } from "react";
 
 const SUPABASE_URL = 'https://pgoxreguplwzhhcesbza.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Rh1ldlYOt2DjZUxz0IDD1w_XASzR03E';
+const supabaseFetch = async (endpoint, options = {}) => {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation",
+      ...options.headers
+    },
+    ...options
+  });
+  return res.json();
+};
 
+const fetchCases = () => supabaseFetch("cases?select=*&order=created_at.desc");
+const addCase = (data) => supabaseFetch("cases", { method: "POST", body: JSON.stringify(data) });
+const GEMINI_KEY = 'AIzaSyD1BqfEI2SpJxc-QFltR9iyC1ZO_4-qDNA';
 // ═══════════════════════════════════════════════════════════════════════════════
 // i18n SYSTEM (unchanged from previous)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -115,18 +131,15 @@ const useLang = () => useContext(LangCtx);
 // AI ENGINE  (real API calls, input-driven results)
 // ═══════════════════════════════════════════════════════════════════════════════
 const callClaude = async (systemPrompt, userContent, maxTokens = 800) => {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_KEY}', {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userContent }],
+      contents: [{ parts: [{ text: systemPrompt + "\n\n" + userContent }] }],
     }),
   });
   const data = await res.json();
-  return data.content?.filter(b => b.type === "text").map(b => b.text).join("") || "";
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 };
 
 const AI_SYSTEMS = {
@@ -893,7 +906,7 @@ function AIPanel({ c, user }) {
     setCaseLoading(true); setCaseAnalysis(null);
     const input = `Field: ${c.field}\nFaculty: ${c.faculty}\nStatus: ${c.status}\nTags: ${c.tags.join(", ")}\nDescription: ${c.description}\nNotes: ${c.notes.map(n=>n.text).join(" | ")}\nProgress: ${c.progress}%\nBone data: ${c.boneAnalysis ? "yes - "+c.boneAnalysis.ai_summary : "no"}\nMedical data: ${c.medicalReview ? "yes" : "no"}`;
     try { const r = await callClaude(AI_SYSTEMS.caseAnalysis, input, 700); setCaseAnalysis(parseJSON(r) || { summary:r }); }
-    catch { setCaseAnalysis({ summary:"Analysis failed. Please try again." }); }
+    catch(e) { console.log("AI error:", e); setCaseAnalysis({ summary:"Analysis failed: " + e.message }); }
     setCaseLoading(false);
   };
 
@@ -957,7 +970,7 @@ function AIPanel({ c, user }) {
           </div>
           <div className="ai-sec">
             <div className="ai-sec-lbl">{t("keyThemes")}</div>
-            <div>{c.tags.map(tg=><span key={tg} className="ai-chip chip-b">#{tg}</span>)}{c.boneAnalysis&&<span className="ai-chip chip-g">🦴</span>}{c.medicalReview&&<span className="ai-chip chip-a">🏥</span>}</div>
+            <div>{(c.tags||[]).map(tg=><span key={tg} className="ai-chip chip-b">#{tg}</span>)}{c.boneAnalysis&&<span className="ai-chip chip-g">🦴</span>}{c.medicalReview&&<span className="ai-chip chip-a">🏥</span>}</div>
           </div>
           {loading && <div className="ai-sec"><div className="ai-txt" style={{ color:"var(--g400)",fontStyle:"italic" }}>{t("analyzing")}</div></div>}
           {aiReply && <div className="ai-sec result-box green" style={{ margin:"0 18px 12px",borderLeft:"3px solid var(--green)" }}><div className="ai-sec-lbl">{t("aiResponse")}</div><div className="ai-txt">{aiReply}</div></div>}
@@ -1194,7 +1207,7 @@ function OverviewTab({ c }) {
         <div className="ov-card"><div className="ov-lbl">{t("status")}</div><div style={{ marginTop:4 }}><StatusPill status={c.status} /></div></div>
       </div>
       <div className="ov-lbl" style={{ marginBottom:10 }}>{t("labNotes")}</div>
-      {c.notes.length===0 ? <div className="empty">{t("noNotes")}</div> : c.notes.map((n,i) => (
+      {(c.notes||[]).length===0 ? <div className="empty">{t("noNotes")}</div> : (c.notes||[]).map((n,i) => (
         <div key={i} className="note-item">
           <div><span className="note-auth">{n.author}</span><span className="note-time">{n.time}</span></div>
           <div className="note-txt">{n.text}</div>
@@ -1222,8 +1235,8 @@ function BoneTab({ ba }) {
           <div className="skel-grid">{Object.entries(ba.skeletal_inventory).map(([k,v])=><div key={k} className={`sk-chip ${v===true?"sk-y":v===false?"sk-n":"sk-p"}`}>{k}</div>)}</div>
         </div>
         <div className="bone-card full"><div className="bc-lbl">{t("traumaMarkers")}</div>
-          {ba.trauma_markers.length===0 ? <div style={{ fontSize:12.5,color:"var(--g400)" }}>{t("noTrauma")}</div>
-            : <ul className="t-list">{ba.trauma_markers.map((tm,i)=><li key={i} className="t-item"><span className="t-dot t-rose"/>{tm}</li>)}</ul>}
+          {(ba?.trauma_markers||[]).length===0 ? <div style={{ fontSize:12.5,color:"var(--g400)" }}>{t("noTrauma")}</div>
+            : <ul className="t-list">{(ba?.trauma_markers||[]).map((tm,i)=><li key={i} className="t-item"><span className="t-dot t-rose"/>{tm}</li>)}</ul>}
         </div>
         {ba.pathology.length>0&&<div className="bone-card full"><div className="bc-lbl">{t("pathologyObs")}</div>
           <ul className="t-list">{ba.pathology.map((p,i)=><li key={i} className="t-item"><span className="t-dot t-amber"/>{p}</li>)}</ul></div>}
@@ -1278,11 +1291,11 @@ function CaseDetail({ c, onBack, user }) {
         <button className="back-btn" onClick={onBack}>{t("backToCases")}</button>
         <div className="case-title-lg">{c.title}</div>
         <div className="case-meta-row"><span>📁 {c.workspace}</span><span>👤 {c.author}</span><span>📅 {c.date}</span><StatusPill status={c.status}/></div>
-        <div className="case-tags-row">{c.tags.map(tg=><span key={tg} className="tag-chip">#{tg}</span>)}</div>
+        <div className="case-tags-row">{(c.tags||[]).map(tg=><span key={tg} className="tag-chip">#{tg}</span>)}</div>
         <div className="tabs">{allTabs.map(tb=><div key={tb.id} className={`tab${tab===tb.id?" active":""}`} onClick={()=>setTab(tb.id)}>{tb.label}</div>)}</div>
         {tab==="overview"&&<OverviewTab c={c}/>}
         {tab==="notes"&&(
-          <div>{c.notes.length===0?<div className="empty">{t("noNotes")}</div>:c.notes.map((n,i)=>(
+          <div>{(c.notes||[]).length===0?<div className="empty">{t("noNotes")}</div>:(c.notes||[]).map((n,i)=>(
             <div key={i} className="note-item">
               <div><span className="note-auth">{n.author}</span><span className="note-time">{n.time}</span></div>
               <div className="note-txt">{n.text}</div>
@@ -1394,11 +1407,23 @@ function DashboardPage({ onSelect, user }) {
   );
 }
 
-function CasesPage({ onSelect }) {
+function CasesPage({ onSelect, user }) {
   const { t } = useLang();
+  const [cases, setCases] = useState([]);
+const [loading, setLoading] = useState(true);
+const [showAdd, setShowAdd] = useState(false);
+const [newTitle, setNewTitle] = useState("");
+const [newDesc, setNewDesc] = useState("");
+
+useEffect(() => {
+  fetchCases().then(data => {
+    if (Array.isArray(data)) setCases(data);
+    setLoading(false);
+  });
+}, []);
   const [filter, setFilter] = useState("all");
   const [facFilter, setFacFilter] = useState("all");
-  const filtered = CASES.filter(c=>filter==="all"||c.status===filter).filter(c=>facFilter==="all"||c.faculty===facFilter);
+ const filtered = cases.filter(c=>filter==="all"||c.status===filter).filter(c=>facFilter==="all"||c.faculty===facFilter);
   return (
     <div>
       <div className="sec-title">{t("casesTitle")}</div>
@@ -1413,8 +1438,20 @@ function CasesPage({ onSelect }) {
           <option value="all">All Faculties</option>
           {FACULTIES_LIST.map(f=><option key={f} value={f}>{f}</option>)}
         </select>
-        <button className="tbtn tbtn-green" style={{ marginLeft:"auto" }}>{t("newCase")}</button>
+        <button className="tbtn tbtn-green" style={{ marginLeft:"auto" }} onClick={()=>setShowAdd(true)}>{t("newCase")}</button>
       </div>
+      {showAdd && (
+  <div style={{background:"#1e293b",padding:"20px",borderRadius:"12px",marginBottom:"16px"}}>
+    <input placeholder="Case title" value={newTitle} onChange={e=>setNewTitle(e.target.value)} style={{width:"100%",padding:"8px",marginBottom:"8px",borderRadius:"6px",border:"1px solid #334155",background:"#0f172a",color:"white"}}/>
+    <input placeholder="Description" value={newDesc} onChange={e=>setNewDesc(e.target.value)} style={{width:"100%",padding:"8px",marginBottom:"8px",borderRadius:"6px",border:"1px solid #334155",background:"#0f172a",color:"white"}}/>
+    <button onClick={async()=>{
+      await addCase({title:newTitle, description:newDesc, status:"open", user_email: user?.email || "anonymous"});
+      setNewTitle(""); setNewDesc(""); setShowAdd(false);
+      fetchCases().then(data=>{ if(Array.isArray(data)) setCases(data); });
+    }} className="tbtn tbtn-green">Save</button>
+    <button onClick={()=>setShowAdd(false)} style={{marginLeft:"8px"}} className="tbtn">Cancel</button>
+  </div>
+)}
       {filtered.map(c=>(
         <div key={c.id} className="case-row" onClick={()=>onSelect(c)}>
           <div className="case-id">{c.id}</div>
@@ -1749,7 +1786,7 @@ export default function App() {
           ) : (
             <div className="content">
               {page==="dashboard"&&<DashboardPage onSelect={handleSelect} user={user}/>}
-              {page==="cases"&&<CasesPage onSelect={handleSelect}/>}
+              {page==="cases"&&<CasesPage onSelect={handleSelect} user={user}/>}
               {page==="activities"&&<ActivitiesPage/>}
               {page==="workspaces"&&<WorkspacesPage/>}
               {page==="classroom"&&<ClassroomPage user={user}/>}
