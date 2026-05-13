@@ -1276,6 +1276,7 @@ function MedicalTab({ mr }) {
 function CaseDetail({ c, onBack, user }) {
   const { t, lang } = useLang();
   const [tab, setTab] = useState("overview");
+  const [showAI, setShowAI] = useState(false);
   const targetLang = lang === "en" ? "tr" : "en";
   const allTabs = [
     { id:"overview", label:t("tabOverview"), show:true },
@@ -1322,7 +1323,8 @@ function CaseDetail({ c, onBack, user }) {
           ))}</div>
         )}
       </div>
-      <AIPanel c={c} user={user}/>
+      {showAI && <AIPanel c={c} user={user}/>}
+<button onClick={()=>setShowAI(s=>!s)} style={{position:"fixed",bottom:24,right:24,background:"#4f46e5",color:"white",border:"none",borderRadius:"50%",width:52,height:52,fontSize:22,cursor:"pointer",boxShadow:"0 4px 16px rgba(79,70,229,0.4)",zIndex:100}}>🤖</button>
     </div>
   );
 }
