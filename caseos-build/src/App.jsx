@@ -1537,58 +1537,76 @@ function ActivitiesPage() {
 
 function ClassroomPage({ user }) {
   const { t } = useLang();
-  const [joinCode, setJoinCode] = useState("");
-  const [joinStatus, setJoinStatus] = useState(null);
-  const checkJoin = (val) => {
-    const up = val.toUpperCase();
-    setJoinCode(up);
-    setJoinStatus(CLASS_CODES[up] ? "valid" : up.length >= 4 ? "invalid" : null);
-  };
-  return (
-    <div>
-      <div className="sec-title">{t("classroom")}</div>
-      <div className="sec-sub">Class and lab management system · {user?.role}</div>
-      {(user?.role === "Faculty" || user?.role === "Lab Researcher") && (
-        <div className="card" style={{ padding:"18px",marginBottom:20 }}>
-          <div style={{ fontWeight:700,fontSize:13.5,color:"var(--navy)",marginBottom:12 }}>👩‍🏫 Create a New Class</div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12 }}>
-            {[{ph:"Class Name"},{ph:"Course Code"},{ph:"Semester"},{ph:"Max Students"}].map((f,i)=>(
-              <input key={i} className="auth-inp" placeholder={f.ph} style={{ margin:0 }}/>
-            ))}
-          </div>
-          <button className="tbtn tbtn-green">Create Class & Generate Code</button>
+  const [myClassroom, setMyClassroom] = useState(null);
+const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+  // Kullanıcının sınıfını kontrol et
+  supabaseFetch(`classroom_members?user_email=eq.${user.email}&select=*`)
+    .then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        setMyClassroom(data[0]);
+      }
+      setLoading(false);
+    });
+}, []);
+
+const createClassroom = async () => {
+  const code = Math.random().toString(36).substring(2,8).toUpperCase();
+  await supabaseFetch("classrooms", { method:"POST", body: JSON.stringify({ code, name: user.email+"'s class", instructor_email: user.email }) });
+  await supabaseFetch("classroom_members", { method:"POST", body: JSON.stringify({ classroom_code: code, user_email: user.email, role:"instructor" }) });
+  setMyClassroom({ classroom_code: code, role:"instructor" });
+};
+
+const joinClassroom = async () => {
+  const rooms = await supabaseFetch(`classrooms?code=eq.${joinCode}`);
+  if (Array.isArray(rooms) && rooms.length > 0) {
+    await supabaseFetch("classroom_members", { method:"POST", body: JSON.stringify({ classroom_code: joinCode, user_email: user.email, role:"student" }) });
+    setMyClassroom({ classroom_code: joinCode, role:"student" });
+  } else {
+    setJoinStatus("invalid");
+  }
+};
+
+
+const [joinCode, setJoinCode] = useState("");
+const [joinStatus, setJoinStatus] = useState(null);
+
+return (
+  <div>
+    <div className="sec-title">{t("classroom")}</div>
+    <div className="sec-sub">Class and lab management system · {user?.role}</div>
+    {myClassroom ? (
+      <div style={{background:"#f0f9ff",borderRadius:12,padding:20,marginBottom:20}}>
+        <div style={{fontSize:16,fontWeight:700,color:"var(--navy)",marginBottom:8}}>
+          {myClassroom.role === "instructor" ? "👩‍🏫 Your Class" : "🎓 Your Class"}
         </div>
-      )}
-      <div className="join-code-box" style={{ marginBottom:20 }}>
-        <div style={{ fontSize:13,fontWeight:600,color:"var(--navy)",marginBottom:10 }}>🔑 Join a Class with Code</div>
-        <input className="join-code-input" placeholder="Enter class code…" value={joinCode} onChange={e=>checkJoin(e.target.value)} maxLength={20}/>
-        {joinStatus==="valid" && <div className="auth-hint ok" style={{ marginTop:10,textAlign:"left" }}>✓ <strong>{CLASS_CODES[joinCode]?.name}</strong> — {CLASS_CODES[joinCode]?.faculty}</div>}
-        {joinStatus==="invalid" && <div className="auth-hint err" style={{ marginTop:10,textAlign:"left" }}>Code not recognized</div>}
-        <div style={{ fontSize:11,color:"var(--g400)",marginTop:8 }}>Try: ANTH-301 · FORENSIC-LAB · MED-ANAT-1 · SOC-415 · ARCH-201</div>
-        <button className="tbtn tbtn-navy" style={{ marginTop:12 }} disabled={joinStatus!=="valid"}>Join Class</button>
+        <div style={{fontSize:24,fontWeight:800,letterSpacing:4,color:"#4f46e5",marginBottom:8}}>
+          {myClassroom.classroom_code}
+        </div>
+        <div style={{fontSize:12,color:"var(--g400)"}}>
+          {myClassroom.role === "instructor" ? "Share this code with your students" : "You are a student in this class"}
+        </div>
       </div>
-      <div style={{ fontWeight:700,fontSize:14,color:"var(--navy)",marginBottom:14 }}>Active Classes</div>
-      <div className="class-grid">
-        {CLASS_DATA.map(cls=>(
-          <div key={cls.id} className="class-card">
-            <div className="class-code">{cls.code}</div>
-            <div className="class-name">{cls.name}</div>
-            <div className="class-meta">👩‍🏫 {cls.faculty}</div>
-            <div className="class-stats">
-              <div className="class-stat">🎓 {cls.students} students</div>
-              <div className="class-stat">📋 {cls.assignments} assignments</div>
-              <div className="class-stat">📁 {cls.cases.length} cases</div>
-            </div>
-            <div style={{ marginTop:12,display:"flex",gap:8 }}>
-              <button className="tbtn tbtn-navy" style={{ fontSize:11.5 }}>Open Class</button>
-              <button className="tbtn" style={{ fontSize:11.5,background:"var(--g100)",color:"var(--g700)" }}>View Cases</button>
-            </div>
-          </div>
-        ))}
+    ) : (
+      <div>
+        <button className="tbtn tbtn-navy" style={{marginBottom:20}} onClick={createClassroom}>
+          + Create New Class
+        </button>
+        <div className="join-code-box" style={{marginBottom:20}}>
+          <div style={{fontSize:13,fontWeight:600,color:"var(--navy)",marginBottom:10}}>🔑 Join a Class with Code</div>
+          <input className="join-code-input" placeholder="Enter class code…" value={joinCode} onChange={e=>setJoinCode(e.target.value.toUpperCase())} maxLength={20}/>
+          {joinStatus==="invalid" && <div className="auth-hint err" style={{marginTop:10}}>Code not found</div>}
+          <button className="tbtn tbtn-navy" style={{marginTop:12}} onClick={joinClassroom}>Join Class</button>
+        </div>
       </div>
-    </div>
-  );
+    )}
+  </div>
+);
 }
+
+
+
 
 function AnalyticsPage() {
   const { t } = useLang();
