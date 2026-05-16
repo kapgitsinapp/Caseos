@@ -18,7 +18,7 @@ const supabaseFetch = async (endpoint, options = {}) => {
 
 const fetchCases = () => supabaseFetch("cases?select=*&order=created_at.desc");
 const addCase = (data) => supabaseFetch("cases", { method: "POST", body: JSON.stringify(data) });
-const GEMINI_KEY = 'AIzaSyD1BqfEI2SpJxc-QFltR9iyC1ZO_4-qDNA';
+const GEMINI_KEY = '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';
 // ═══════════════════════════════════════════════════════════════════════════════
 // i18n SYSTEM (unchanged from previous)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -131,15 +131,23 @@ const useLang = () => useContext(LangCtx);
 // AI ENGINE  (real API calls, input-driven results)
 // ═══════════════════════════════════════════════════════════════════════════════
 const callClaude = async (systemPrompt, userContent, maxTokens = 800) => {
-  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_KEY}', {
+  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${GEMINI_KEY}`
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: systemPrompt + "\n\n" + userContent }] }],
+      model: "llama-3.1-8b-instant",
+      max_tokens: maxTokens,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent }
+      ]
     }),
   });
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  return data.choices?.[0]?.message?.content || "";
 };
 
 const AI_SYSTEMS = {
@@ -895,8 +903,8 @@ function AIPanel({ c, user }) {
   const askAI = async () => {
     if (!query.trim() || loading) return;
     setLoading(true); setAiReply(null);
-    const prompt = `You are CaseOS AI, an expert academic assistant. Case: "${c.title}" (${c.field}). Context: ${c.description}. Notes: ${c.notes.map(n=>n.text).join(". ")}. Answer in ${replyLang} in 2-4 sentences. User question: ${query}`;
-    try { const r = await callClaude(AI_SYSTEMS.caseAnalysis.split("\n")[0], prompt, 400); setAiReply(r); }
+    const prompt = `You are CaseOS AI, an expert academic assistant. Case: "${c.title}" (${c.field}). Context: ${c.description}. Notes: ${(c.notes||[]).map(n=>n.text).join(". ")}. Answer in ${replyLang} in 2-4 sentences. User question: ${query}`;
+   try { const r = await callClaude("You are CaseOS AI, an expert academic assistant.", prompt, 400);setAiReply(r); }
     catch { setAiReply(t("aiError")); }
     setLoading(false); setQuery("");
   };
@@ -904,7 +912,7 @@ function AIPanel({ c, user }) {
   // Case Analysis
   const runCaseAnalysis = async () => {
     setCaseLoading(true); setCaseAnalysis(null);
-    const input = `Field: ${c.field}\nFaculty: ${c.faculty}\nStatus: ${c.status}\nTags: ${c.tags.join(", ")}\nDescription: ${c.description}\nNotes: ${c.notes.map(n=>n.text).join(" | ")}\nProgress: ${c.progress}%\nBone data: ${c.boneAnalysis ? "yes - "+c.boneAnalysis.ai_summary : "no"}\nMedical data: ${c.medicalReview ? "yes" : "no"}`;
+    const input = `Field: ${c.field}\nFaculty: ${c.faculty}\nStatus: ${c.status}\nTags: ${(c.tags||[]).join(", ")}\nDescription: ${c.description}\nNotes: ${(c.notes||[]).map(n=>n.text).join(" | ")}\nProgress: ${c.progress}%\nBone data: ${c.boneAnalysis ? "yes - "+c.boneAnalysis.ai_summary : "no"}\nMedical data: ${c.medicalReview ? "yes" : "no"}`;
     try { const r = await callClaude(AI_SYSTEMS.caseAnalysis, input, 700); setCaseAnalysis(parseJSON(r) || { summary:r }); }
     catch(e) { console.log("AI error:", e); setCaseAnalysis({ summary:"Analysis failed: " + e.message }); }
     setCaseLoading(false);
