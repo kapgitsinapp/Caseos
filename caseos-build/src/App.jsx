@@ -1696,6 +1696,52 @@ function AnalyticsPage() {
     </div>
   );
 }
+function ModulesPage({ user }) {
+  const [file, setFile] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [fileName, setFileName] = useState("");
+
+  const summarizePDF = async () => {
+    if (!file || loading) return;
+    setLoading(true); setSummary(null);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const text = e.target.result;
+      try {
+        const r = await callClaude(
+          "You are an academic research assistant. Summarize the following academic paper in a structured way: 1) Main topic, 2) Key findings, 3) Methodology, 4) Conclusions, 5) Relevance to forensic anthropology or related fields.",
+          text.substring(0, 8000),
+          800
+        );
+        setSummary(r);
+      } catch { setSummary("Error summarizing. Please try again."); }
+      setLoading(false);
+    };
+    reader.readAsText(file);
+  };
+
+  return (
+    <div>
+      <div className="sec-title">Modules</div>
+      <div className="sec-sub">Academic tools and utilities</div>
+      <div style={{background:"#f8fafc",borderRadius:12,padding:20,marginBottom:20}}>
+        <div style={{fontSize:15,fontWeight:700,color:"var(--navy)",marginBottom:8}}>📄 Paper Summarizer</div>
+        <div style={{fontSize:12,color:"var(--g400)",marginBottom:16}}>Upload a PDF or text file and get an AI-powered summary</div>
+        <input type="file" accept=".pdf,.txt" onChange={e=>{setFile(e.target.files[0]); setFileName(e.target.files[0]?.name||"");}} style={{marginBottom:12,fontSize:12}}/>
+        {fileName && <div style={{fontSize:12,color:"var(--g600)",marginBottom:12}}>📎 {fileName}</div>}
+        <button className="tbtn tbtn-navy" onClick={summarizePDF} disabled={!file||loading}>
+          {loading ? "⏳ Summarizing…" : "✨ Summarize"}
+        </button>
+        {summary && (
+          <div style={{marginTop:20,background:"white",borderRadius:8,padding:16,fontSize:13,lineHeight:1.8,color:"var(--navy)",whiteSpace:"pre-wrap"}}>
+            {summary}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 function AIInsightsPage({ user }) {
   const { t } = useLang();
   const [query, setQuery] = useState("");
@@ -1853,7 +1899,8 @@ export default function App() {
               {page==="classroom"&&<ClassroomPage user={user}/>}
               {page==="analytics"&&<AnalyticsPage/>}
               {page==="news"&&<NewsPage user={user}/>}
-              {(page==="modules"||page==="settings")&&<PlaceholderPage page={page}/>}
+             {page==="settings"&&<PlaceholderPage page={page}/>}
+{page==="modules"&&<ModulesPage user={user}/>} 
 {page==="ai-insights"&&<AIInsightsPage user={user}/>}
             </div>
           )}
