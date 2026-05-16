@@ -1696,7 +1696,40 @@ function AnalyticsPage() {
     </div>
   );
 }
+function AIInsightsPage({ user }) {
+  const { t } = useLang();
+  const [query, setQuery] = useState("");
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
 
+  const askAI = async () => {
+    if (!query.trim() || loading) return;
+    setLoading(true); setResult(null);
+    try {
+      const r = await callClaude("You are CaseOS AI, an expert academic research assistant. Give helpful, detailed answers about academic research, forensic anthropology, isotope analysis, and related fields.", query, 600);
+      setResult(r);
+    } catch { setResult("Error. Please try again."); }
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div className="sec-title">AI Insights</div>
+      <div className="sec-sub">Ask anything about your research</div>
+      <div style={{display:"flex",gap:8,marginBottom:20}}>
+        <input className="auth-inp" style={{flex:1,margin:0}} placeholder="Ask a research question…" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAI()}/>
+        <button className="tbtn tbtn-navy" onClick={askAI} disabled={loading}>
+          {loading ? "⏳" : "Ask"}
+        </button>
+      </div>
+      {result && (
+        <div style={{background:"#f8fafc",borderRadius:12,padding:20,fontSize:13,lineHeight:1.8,color:"var(--navy)"}}>
+          {result}
+        </div>
+      )}
+    </div>
+  );
+}
 function PlaceholderPage({ page }) {
   const { t } = useLang();
   const icons = { modules:"🧩",settings:"⚙️","ai-insights":"🤖" };
@@ -1820,7 +1853,8 @@ export default function App() {
               {page==="classroom"&&<ClassroomPage user={user}/>}
               {page==="analytics"&&<AnalyticsPage/>}
               {page==="news"&&<NewsPage user={user}/>}
-              {(page==="modules"||page==="settings"||page==="ai-insights")&&<PlaceholderPage page={page}/>}
+              {(page==="modules"||page==="settings")&&<PlaceholderPage page={page}/>}
+{page==="ai-insights"&&<AIInsightsPage user={user}/>}
             </div>
           )}
         </div>
