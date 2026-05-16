@@ -18,7 +18,7 @@ const supabaseFetch = async (endpoint, options = {}) => {
 
 const fetchCases = () => supabaseFetch("cases?select=*&order=created_at.desc");
 const addCase = (data) => supabaseFetch("cases", { method: "POST", body: JSON.stringify(data) });
-const GEMINI_KEY = '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';
+const GEMINI_KEY = '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';
 // ═══════════════════════════════════════════════════════════════════════════════
 // i18n SYSTEM (unchanged from previous)
 // ═══════════════════════════════════════════════════════════════════════════════
