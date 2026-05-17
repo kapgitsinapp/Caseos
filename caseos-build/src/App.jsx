@@ -16,7 +16,7 @@ const supabaseFetch = async (endpoint, options = {}) => {
   return res.json();
 };
 
-const fetchCases = () => supabaseFetch("cases?select=*&order=created_at.desc");
+ const fetchCases = (email) => supabaseFetch(`cases?select=*&order=created_at.desc${email ? `&user_email=eq.${email}` : ""}`);
 const addCase = (data) => supabaseFetch("cases", { method: "POST", body: JSON.stringify(data) });
 const GEMINI_KEY = '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';
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1292,7 +1292,8 @@ function CaseDetail({ c, onBack, user }) {
     { id:"bone", label:t("tabBone"), show:!!c.boneAnalysis },
     { id:"medical", label:t("tabMedical"), show:!!c.medicalReview },
     { id:"literature", label:t("tabLiterature"), show:true },
-    { id:"timeline", label:t("tabTimeline"), show:true },
+   { id:"timeline", label:t("tabTimeline"), show:true },
+    { id:"files", label:"📎 Files", show:true },
   ].filter(tb=>tb.show);
   return (
     <div className="case-detail-wrap">
@@ -1426,7 +1427,7 @@ const [newTitle, setNewTitle] = useState("");
 const [newDesc, setNewDesc] = useState("");
 
 useEffect(() => {
-  fetchCases().then(data => {
+  fetchCases(user?.email).then(data => {
     if (Array.isArray(data)) setCases(data);
     setLoading(false);
   });
@@ -1457,7 +1458,7 @@ useEffect(() => {
     <button onClick={async()=>{
       await addCase({title:newTitle, description:newDesc, status:"open", user_email: user?.email || "anonymous"});
       setNewTitle(""); setNewDesc(""); setShowAdd(false);
-      fetchCases().then(data=>{ if(Array.isArray(data)) setCases(data); });
+      fetchCases(user?.email).then(data=>{ if(Array.isArray(data)) setCases(data); });
     }} className="tbtn tbtn-green">Save</button>
     <button onClick={()=>setShowAdd(false)} style={{marginLeft:"8px"}} className="tbtn">Cancel</button>
   </div>
