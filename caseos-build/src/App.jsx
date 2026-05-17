@@ -1,7 +1,7 @@
 import { useState, createContext, useContext, useEffect, useRef } from "react";
 
-const SUPABASE_URL = 'https://pgoxreguplwzhhcesbza.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_Rh1ldlYOt2DjZUxz0IDD1w_XASzR03E';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://pgoxreguplwzhhcesbza.supabase.co';
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_KEY || 'sb_publishable_Rh1ldlYOt2DjZUxz0IDD1w_XASzR03E';
 const supabaseFetch = async (endpoint, options = {}) => {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
     headers: {
@@ -18,7 +18,7 @@ const supabaseFetch = async (endpoint, options = {}) => {
 
  const fetchCases = (email) => supabaseFetch(`cases?select=*&order=created_at.desc${email ? `&user_email=eq.${email}` : ""}`);
 const addCase = (data) => supabaseFetch("cases", { method: "POST", body: JSON.stringify(data) });
-const GEMINI_KEY = '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';
+const GEMINI_KEY = import.meta.env.VITE_GROQ_KEY || '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';
 // ═══════════════════════════════════════════════════════════════════════════════
 // i18n SYSTEM (unchanged from previous)
 // ═══════════════════════════════════════════════════════════════════════════════
