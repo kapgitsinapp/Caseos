@@ -1280,7 +1280,54 @@ function MedicalTab({ mr }) {
     </div>
   );
 }
+function FilesTab({ caseId, userEmail }) {
+  const [files, setFiles] = useState([]);
+  const [link, setLink] = useState("");
+  const [linkName, setLinkName] = useState("");
+  const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    supabaseFetch(`case_files?case_id=eq.${caseId}&user_email=eq.${userEmail}&select=*&order=created_at.desc`)
+      .then(data => { if (Array.isArray(data)) setFiles(data); setLoading(false); });
+  }, [caseId]);
+
+  const addLink = async () => {
+    if (!link.trim()) return;
+    await supabaseFetch("case_files", { method:"POST", body: JSON.stringify({ case_id: caseId, user_email: userEmail, file_name: linkName||link, file_url: link, file_type: "link" }) });
+    setLink(""); setLinkName("");
+    supabaseFetch(`case_files?case_id=eq.${caseId}&user_email=eq.${userEmail}&select=*&order=created_at.desc`)
+      .then(data => { if (Array.isArray(data)) setFiles(data); });
+  };
+
+  const deleteFile = async (id) => {
+    await supabaseFetch(`case_files?id=eq.${id}`, { method:"DELETE" });
+    setFiles(f => f.filter(x => x.id !== id));
+  };
+
+  if (loading) return <div style={{padding:20}}>Loading...</div>;
+
+  return (
+    <div style={{padding:"16px 0"}}>
+      <div style={{background:"#f8fafc",borderRadius:12,padding:16,marginBottom:16}}>
+        <div style={{fontSize:13,fontWeight:600,color:"var(--navy)",marginBottom:10}}>🔗 Add Link</div>
+        <input className="auth-inp" style={{margin:"0 0 8px 0"}} placeholder="URL (https://...)" value={link} onChange={e=>setLink(e.target.value)}/>
+        <input className="auth-inp" style={{margin:"0 0 8px 0"}} placeholder="Name (optional)" value={linkName} onChange={e=>setLinkName(e.target.value)}/>
+        <button className="tbtn tbtn-navy" onClick={addLink}>Add Link</button>
+      </div>
+      {files.length === 0 ? (
+        <div className="empty">No files yet</div>
+      ) : (
+        files.map(f => (
+          <div key={f.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 0",borderBottom:"1px solid var(--g100)"}}>
+            <span>{f.file_type==="link" ? "🔗" : "📄"}</span>
+            <a href={f.file_url} target="_blank" rel="noreferrer" style={{flex:1,fontSize:13,color:"#4f46e5"}}>{f.file_name}</a>
+            <button onClick={()=>deleteFile(f.id)} style={{background:"none",border:"none",color:"var(--rose)",cursor:"pointer",fontSize:16}}>🗑️</button>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
 function CaseDetail({ c, onBack, user }) {
   const { t, lang } = useLang();
   const [tab, setTab] = useState("overview");
@@ -1316,8 +1363,9 @@ function CaseDetail({ c, onBack, user }) {
         {tab==="bone"&&<BoneTab ba={c.boneAnalysis}/>}
         {tab==="medical"&&<MedicalTab mr={c.medicalReview}/>}
         {tab==="literature"&&<div className="empty">{t("literatureMsg")}</div>}
-        {tab==="timeline"&&(
-          <div>{[{date:c.date,label:t("caseOpenedEvent"),desc:`${t("openedBy")} ${c.author}`},...c.notes.map(n=>({date:n.time,label:t("noteAdded"),desc:n.text}))].map((ev,i,arr)=>(
+        {tab==="timeline"&&9}
+          {tab==="files"&&<FilesTab caseId={c.id} userEmail={user?.email}/>}
+          <div>{[{date:c.date,label:t("caseOpenedEvent"),desc:`${t("openedBy")} ${c.author}`},...(c.notes||[]).map(n=>({date:n.time,label:t("noteAdded"),desc:n.text}))].map((ev,i,arr)=>(
             <div key={i} style={{ display:"flex",gap:14,marginBottom:16 }}>
               <div style={{ display:"flex",flexDirection:"column",alignItems:"center" }}>
                 <div style={{ width:10,height:10,borderRadius:"50%",background:"var(--green)",marginTop:3,flexShrink:0 }}/>
@@ -1330,7 +1378,7 @@ function CaseDetail({ c, onBack, user }) {
               </div>
             </div>
           ))}</div>
-        )}
+        )
       </div>
       {showAI && <AIPanel c={c} user={user}/>}
 <button onClick={()=>setShowAI(s=>!s)} style={{position:"fixed",bottom:24,right:24,background:"#4f46e5",color:"white",border:"none",borderRadius:"50%",width:52,height:52,fontSize:22,cursor:"pointer",boxShadow:"0 4px 16px rgba(79,70,229,0.4)",zIndex:100}}>🤖</button>
