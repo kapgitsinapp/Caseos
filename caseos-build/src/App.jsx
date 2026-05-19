@@ -1855,6 +1855,90 @@ function AIInsightsPage({ user }) {
     </div>
   );
 }
+function SettingsPage({ user, onUpdate }) {
+  const [name, setName] = useState(user?.full_name || "");
+  const [university, setUniversity] = useState(user?.university || "");
+  const [bio, setBio] = useState(user?.bio || "");
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState(user?.tags || []);
+  const [saved, setSaved] = useState(false);
+
+  const addTag = () => {
+    if (!tagInput.trim()) return;
+    const tag = tagInput.startsWith("#") ? tagInput : "#"+tagInput;
+    setTags(t=>[...t, tag]);
+    setTagInput("");
+  };
+
+  const removeTag = (i) => setTags(t=>t.filter((_,idx)=>idx!==i));
+
+  const save = async () => {
+    const updated = { ...user, full_name: name, university, bio, tags };
+    await supabaseFetch(`profiles?email=eq.${user.email}`, { 
+      method: "PATCH", 
+      headers: { "Prefer": "return=representation" },
+      body: JSON.stringify({ full_name: name, university, bio, tags }) 
+    });
+    onUpdate(updated);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div>
+      <div className="sec-title">Settings</div>
+      <div className="sec-sub">Manage your profile</div>
+      <div style={{background:"white",borderRadius:12,padding:24,maxWidth:600}}>
+        <div style={{fontSize:13,fontWeight:600,color:"var(--navy)",marginBottom:16}}>👤 Profile Information</div>
+        
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:600,color:"var(--g400)",textTransform:"uppercase",marginBottom:4}}>Email</div>
+          <div style={{fontSize:13,color:"var(--g700)",padding:"8px 12px",background:"var(--g100)",borderRadius:8}}>{user?.email}</div>
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:600,color:"var(--g400)",textTransform:"uppercase",marginBottom:4}}>Role</div>
+          <div style={{fontSize:13,color:"var(--g700)",padding:"8px 12px",background:"var(--g100)",borderRadius:8}}>{user?.role}</div>
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:600,color:"var(--g400)",textTransform:"uppercase",marginBottom:4}}>Full Name</div>
+          <input className="auth-inp" style={{margin:0}} value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/>
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:600,color:"var(--g400)",textTransform:"uppercase",marginBottom:4}}>University</div>
+          <input className="auth-inp" style={{margin:0}} value={university} onChange={e=>setUniversity(e.target.value)} placeholder="Your university"/>
+        </div>
+
+        <div style={{marginBottom:12}}>
+          <div style={{fontSize:11,fontWeight:600,color:"var(--g400)",textTransform:"uppercase",marginBottom:4}}>Bio</div>
+          <textarea className="auth-inp" style={{margin:0,height:80,resize:"vertical"}} value={bio} onChange={e=>setBio(e.target.value)} placeholder="Brief description about your research..."/>
+        </div>
+
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:11,fontWeight:600,color:"var(--g400)",textTransform:"uppercase",marginBottom:8}}>Research Tags</div>
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            <input className="auth-inp" style={{margin:0,flex:1}} value={tagInput} onChange={e=>setTagInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addTag()} placeholder="#AntikDNA #Biyoantropoloji..."/>
+            <button className="tbtn tbtn-navy" onClick={addTag}>Add</button>
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {tags.map((tg,i)=>(
+              <span key={i} style={{background:"var(--g100)",padding:"4px 10px",borderRadius:20,fontSize:12,color:"var(--navy)",display:"flex",alignItems:"center",gap:6}}>
+                {tg}
+                <span onClick={()=>removeTag(i)} style={{cursor:"pointer",color:"var(--rose)"}}>×</span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <button className="tbtn tbtn-green" onClick={save}>
+          {saved ? "✓ Saved!" : "Save Profile"}
+        </button>
+      </div>
+    </div>
+  );
+}
 function PlaceholderPage({ page }) {
   const { t } = useLang();
   const icons = { modules:"🧩",settings:"⚙️","ai-insights":"🤖" };
@@ -1958,7 +2042,7 @@ const handleNav = (id) => {
               <div className="user-row">
                 <div className="u-av">{user.name.split(" ").map(w=>w[0]).slice(0,2).join("")}</div>
                 <div>
-                  <div className="u-name">{user.name}</div>
+                 <div className="u-name">{user.full_name || user.email?.split("@")[0]}</div>
                   <div className="u-role">{user.role} · {user.faculty}</div>
                 </div>
               </div>
@@ -1988,7 +2072,7 @@ const handleNav = (id) => {
               {page==="classroom"&&<ClassroomPage user={user}/>}
               {page==="analytics"&&<AnalyticsPage/>}
               {page==="news"&&<NewsPage user={user}/>}
-             {page==="settings"&&<PlaceholderPage page={page}/>}
+            {page==="settings"&&<SettingsPage user={user} onUpdate={(u)=>{setUser(u);localStorage.setItem("caseos_user",JSON.stringify(u));}}/>}
 {page==="modules"&&<ModulesPage user={user}/>} 
 {page==="ai-insights"&&<AIInsightsPage user={user}/>}
             </div>
