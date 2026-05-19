@@ -1285,12 +1285,29 @@ function FilesTab({ caseId, userEmail }) {
   const [link, setLink] = useState("");
   const [linkName, setLinkName] = useState("");
   const [loading, setLoading] = useState(true);
-
+const [selectedFile, setSelectedFile] = useState(null);
   useEffect(() => {
     supabaseFetch(`case_files?case_id=eq.${caseId}&user_email=eq.${userEmail}&select=*&order=created_at.desc`)
       .then(data => { if (Array.isArray(data)) setFiles(data); setLoading(false); });
   }, [caseId]);
-
+const uploadFile = async (file) => {
+  const fileName = `${caseId}/${Date.now()}_${file.name}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/case%20files/${fileName}`, {
+    method: "POST",
+    headers: {
+      "apikey": SUPABASE_KEY,
+      "Authorization": `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": file.type,
+    },
+    body: file
+  });
+  if (res.ok) {
+    const fileUrl = `${SUPABASE_URL}/storage/v1/object/public/case%20files/${fileName}`;
+    await supabaseFetch("case_files", { method:"POST", body: JSON.stringify({ case_id: caseId, user_email: userEmail, file_name: file.name, file_url: fileUrl, file_type: file.type }) });
+    supabaseFetch(`case_files?case_id=eq.${caseId}&user_email=eq.${userEmail}&select=*&order=created_at.desc`)
+      .then(data => { if (Array.isArray(data)) setFiles(data); });
+  }
+};4
   const addLink = async () => {
     if (!link.trim()) return;
     await supabaseFetch("case_files", { method:"POST", body: JSON.stringify({ case_id: caseId, user_email: userEmail, file_name: linkName||link, file_url: link, file_type: "link" }) });
@@ -1309,6 +1326,10 @@ function FilesTab({ caseId, userEmail }) {
   return (
     <div style={{padding:"16px 0"}}>
       <div style={{background:"#f8fafc",borderRadius:12,padding:16,marginBottom:16}}>
+      <div style={{fontSize:13,fontWeight:600,color:"var(--navy)",marginBottom:10}}>📄 Upload File</div>
+  <input type="file" onChange={e=>setSelectedFile(e.target.files[0])} style={{fontSize:12,marginBottom:8}}/>
+{selectedFile && <div style={{fontSize:12,color:"var(--g600)",marginBottom:8}}>📎 {selectedFile.name}</div>}
+<button className="tbtn tbtn-navy" onClick={()=>selectedFile&&uploadFile(selectedFile).then(()=>setSelectedFile(null))}>Upload</button>
         <div style={{fontSize:13,fontWeight:600,color:"var(--navy)",marginBottom:10}}>🔗 Add Link</div>
         <input className="auth-inp" style={{margin:"0 0 8px 0"}} placeholder="URL (https://...)" value={link} onChange={e=>setLink(e.target.value)}/>
         <input className="auth-inp" style={{margin:"0 0 8px 0"}} placeholder="Name (optional)" value={linkName} onChange={e=>setLinkName(e.target.value)}/>
