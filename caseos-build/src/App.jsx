@@ -352,7 +352,7 @@ const CSS = `
   --amber:#d97706;--rose:#e11d48;--blue:#2563eb;
   --sh-sm:0 1px 3px rgba(15,34,64,.07),0 1px 2px rgba(15,34,64,.04);
   --sh-md:0 4px 14px rgba(15,34,64,.09),0 2px 6px rgba(15,34,64,.05);
-  --sh-lg:0 10px 32px rgba(15,34,64,.12),0 4px 12px rgba(15,34,64,.07);
+  --sh-lg:0 10px 32px rgba(5,34,64,.12),0 4px 12px rgba(15,34,64,.07);
   --r:12px;--rs:8px;
 }
 body{font-family:'DM Sans',sans-serif;background:var(--g50);color:var(--g800)}
@@ -433,7 +433,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--g50);color:var(--g800)}
 .tbtn-navy{background:var(--navy);color:#fff}.tbtn-navy:hover{background:var(--navy-l)}
 .tbtn-green{background:var(--green);color:#fff}.tbtn-green:hover{background:var(--green-l)}
 .content{flex:1;overflow-y:auto;padding:26px 26px 48px;background:var(--g50)}
-
+.content{animation:fadeIn 0.25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.tbtn{transition:all 0.15s ease!important}
+.tbtn:hover{transform:translateY(-1px)!important}
+.news-c{transition:all 0.2s ease}
+.stat-c{transition:box-shadow 0.2s ease,transform 0.2s ease}
+.case-row{transition:all 0.15s ease}
 /* CARDS */
 .card{background:var(--white);border-radius:var(--r);border:1px solid var(--g200);box-shadow:var(--sh-sm);overflow:hidden}
 .card-hd{padding:14px 18px 12px;border-bottom:1px solid var(--g100);display:flex;align-items:center;justify-content:space-between}
@@ -1352,6 +1358,8 @@ const uploadFile = async (file) => {
 function CaseDetail({ c, onBack, user }) {
   const { t, lang } = useLang();
   const [tab, setTab] = useState("overview");
+  const [tabAnimating, setTabAnimating] = useState(false);
+const changeTab = (id) => { setTabAnimating(true); setTimeout(() => { setTab(id); setTabAnimating(false); }, 250); };
   const [showAI, setShowAI] = useState(false);
   const targetLang = lang === "en" ? "tr" : "en";
   const allTabs = [
@@ -1370,7 +1378,8 @@ function CaseDetail({ c, onBack, user }) {
         <div className="case-title-lg">{c.title}</div>
         <div className="case-meta-row"><span>📁 {c.workspace}</span><span>👤 {c.author}</span><span>📅 {c.date}</span><StatusPill status={c.status}/></div>
         <div className="case-tags-row">{(c.tags||[]).map(tg=><span key={tg} className="tag-chip">#{tg}</span>)}</div>
-        <div className="tabs">{allTabs.map(tb=><div key={tb.id} className={`tab${tab===tb.id?" active":""}`} onClick={()=>setTab(tb.id)}>{tb.label}</div>)}</div>
+        <div className="tabs">{allTabs.map(tb=><div key={tb.id} className={`tab${tab===tb.id?" active":""}`} onClick={()=>changeTab(tb.id)}>{tb.label}</div>)}</div>
+        <div style={{opacity: tabAnimating ? 0 : 1, transform: tabAnimating ? 'translateY(4px)' : 'translateY(0)', transition: 'opacity 0.15s ease, transform 0.15s ease'}}></div>
         {tab==="overview"&&<OverviewTab c={c}/>}
         {tab==="notes"&&(
           <div>{(c.notes||[]).length===0?<div className="empty">{t("noNotes")}</div>:(c.notes||[]).map((n,i)=>(
@@ -1864,7 +1873,7 @@ function PlaceholderPage({ page }) {
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function App() {
   const [user, setUser] = useState(null);
-  const [page, setPage] = useState("dashboard");
+  const [page, setPage] = useState("dashboard");const [animating, setAnimating] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
   const [lang, setLang] = useState("en");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -1884,8 +1893,15 @@ export default function App() {
     { id:"settings", icon:"⚙", labelKey:"settings" },
   ];
 
-  const handleSelect = (c) => { setSelectedCase(c); setPage("case-detail"); };
-  const handleNav = (id) => { setPage(id); setSelectedCase(null); };
+  const handleSelect = (c) => { 
+  setAnimating(true);
+  setTimeout(() => { setSelectedCase(c); setPage("case-detail"); setAnimating(false); }, 200);
+};
+const handleNav = (id) => { 
+  setAnimating(true);
+  setTimeout(() => { setPage(id); setSelectedCase(null); setAnimating(false); }, 200);
+};
+
 
   const titleMap = {
     dashboard:t("dashboard"),cases:t("cases"),activities:t("activities"),
@@ -1961,7 +1977,7 @@ export default function App() {
               <CaseDetail c={selectedCase} onBack={()=>{setPage("cases");setSelectedCase(null);}} user={user}/>
             </div>
           ) : (
-            <div className="content">
+            <div className="content" style={{opacity: animating ? 0 : 1, transform: animating ? 'translateY(8px)' : 'translateY(0)', transition: 'opacity 0.2s ease, transform 0.2s ease'}}>
               {page==="dashboard"&&<DashboardPage onSelect={handleSelect} user={user}/>}
               {page==="cases"&&<CasesPage onSelect={handleSelect} user={user}/>}
               {page==="activities"&&<ActivitiesPage/>}
