@@ -1872,7 +1872,10 @@ function PlaceholderPage({ page }) {
 // ROOT APP
 // ═══════════════════════════════════════════════════════════════════════════════
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+  try { return JSON.parse(localStorage.getItem("caseos_user")) || null; } 
+  catch { return null; }
+});
   const [page, setPage] = useState("dashboard");const [animating, setAnimating] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
   const [lang, setLang] = useState("en");
@@ -1913,7 +1916,7 @@ const handleNav = (id) => {
   if (!user) return (
     <LangCtx.Provider value={{ lang, t }}>
       <style>{CSS}</style>
-      <AuthPage onLogin={(u) => { setUser(u); setPage("dashboard"); }} />
+      <AuthPage onLogin={(u) => { setUser(u); localStorage.setItem("caseos_user", JSON.stringify(u)); setPage("dashboard"); }} />
     </LangCtx.Provider>
   );
 
