@@ -1878,7 +1878,7 @@ export default function App() {
 });
   const [page, setPage] = useState("dashboard");const [animating, setAnimating] = useState(false);
   const [selectedCase, setSelectedCase] = useState(null);
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState(() => localStorage.getItem("caseos_lang") || "tr");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const t = (key) => TRANSLATIONS[lang][key] || key;
@@ -1951,8 +1951,8 @@ const handleNav = (id) => {
               ))}
             </div>
             <div className="lang-switcher">
-              <button className={`lang-btn${lang==="en"?" active":""}`} onClick={()=>setLang("en")}>🇬🇧 EN</button>
-              <button className={`lang-btn${lang==="tr"?" active":""}`} onClick={()=>setLang("tr")}>🇹🇷 TR</button>
+             <button className={`lang-btn${lang==="en"?" active":""}`} onClick={()=>{setLang("en");localStorage.setItem("caseos_lang","en")}}>🇬🇧 EN</button>
+<button className={`lang-btn${lang==="tr"?" active":""}`} onClick={()=>{setLang("tr");localStorage.setItem("caseos_lang","tr")}}>🇹🇷 TR</button>
             </div>
             <div className="sb-foot">
               <div className="user-row">
