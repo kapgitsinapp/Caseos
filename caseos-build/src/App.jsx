@@ -1893,14 +1893,7 @@ function AIInsightsPage({ user }) {
               ))}
             </div>
           )}
-          {result.arastirma_bosluklari?.length > 0 && (
-            <div style={{background:"#fffbeb",borderRadius:12,padding:16,borderLeft:"4px solid var(--amber)"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"var(--amber)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>⚠ Araştırma Boşlukları</div>
-              {result.arastirma_bosluklari.map((b,i)=>(
-                <div key={i} style={{fontSize:13,color:"var(--g700)",padding:"3px 0"}}>• {b}</div>
-              ))}
-            </div>
-          )}
+         
           {result.sonraki_adim && (
             <div style={{background:"var(--green-p)",borderRadius:12,padding:16,borderLeft:"4px solid var(--green)"}}>
               <div style={{fontSize:10,fontWeight:700,color:"var(--green)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>✅ Sonraki Adım</div>
