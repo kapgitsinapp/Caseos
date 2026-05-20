@@ -18,7 +18,7 @@ const supabaseFetch = async (endpoint, options = {}) => {
 
  const fetchCases = (email) => supabaseFetch(`cases?select=*&order=created_at.desc${email ? `&user_email=eq.${email}` : ""}`);
 const addCase = (data) => supabaseFetch("cases", { method: "POST", body: JSON.stringify(data) });
-const GEMINI_KEY = import.meta.env.VITE_GROQ_KEY || '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';
+const GEMINI_KEY = import.meta.env.VITE_GROQ_KEY 
 // ═══════════════════════════════════════════════════════════════════════════════
 // i18n SYSTEM (unchanged from previous)
 // ═══════════════════════════════════════════════════════════════════════════════
