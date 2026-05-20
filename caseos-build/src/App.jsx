@@ -2094,7 +2094,7 @@ const handleNav = (id) => {
           <header className="topbar">
             <div className="topbar-title">{titleMap[page]}</div>
             <div className="search-box">🔍 <span>{t("searchPlaceholder")}</span></div>
-            {page==="cases"&&<button className="tbtn tbtn-green">{t("newCase")}</button>}
+          
             <button className="tbtn tbtn-navy">🔔</button>
           </header>
           {isCaseDetail ? (
