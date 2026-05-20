@@ -25,7 +25,7 @@ const GEMINI_KEY = import.meta.env.VITE_GROQ_KEY
 const TRANSLATIONS = {
   en: {
     navigation:"Navigation",dashboard:"Dashboard",cases:"Cases",activities:"Activities",
-    workspaces:"Workspaces",aiInsights:"AI Insights",academicNews:"Academic News",
+    workspaces:"Workspaces",aiInsights:"CaseOS Search",academicNews:"Academic News",
     modules:"Modules",settings:"Settings",classroom:"Classroom",analytics:"Analytics",
     searchPlaceholder:"Search cases, notes, researchers…",newCase:"+ New Case",
     dashTitle:"Research Dashboard",dashSub:"Academic Year 2023–2024 · Spring Semester",
@@ -75,7 +75,7 @@ const TRANSLATIONS = {
   },
   tr: {
     navigation:"Navigasyon",dashboard:"Dashboard",cases:"Vakalar",activities:"Aktiviteler",
-    workspaces:"Çalışma Alanları",aiInsights:"AI Analizleri",academicNews:"Akademik Haberler",
+    workspaces:"Çalışma Alanları",aiInsights:"CaseOS Search",academicNews:"Akademik Haberler",
     modules:"Modüller",settings:"Ayarlar",classroom:"Sınıf Sistemi",analytics:"Analitik",
     searchPlaceholder:"Vaka, not, araştırmacı ara…",newCase:"+ Yeni Vaka",
     dashTitle:"Araştırma Paneli",dashSub:"Akademik Yıl 2023–2024 · Bahar Dönemi",
@@ -1840,7 +1840,7 @@ function AIInsightsPage({ user }) {
 
   return (
     <div>
-      <div className="sec-title">AI Insights</div>
+      <div className="sec-title">CaseOS Search</div>
       <div className="sec-sub">Ask anything about your research</div>
       <div style={{display:"flex",gap:8,marginBottom:20}}>
         <input className="auth-inp" style={{flex:1,margin:0}} placeholder="Ask a research question…" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAI()}/>
@@ -2019,7 +2019,7 @@ export default function App() {
     { id:"workspaces", icon:"🗂", labelKey:"workspaces" },
     { id:"classroom", icon:"🎓", labelKey:"classroom" },
     { id:"analytics", icon:"📊", labelKey:"analytics" },
-    { id:"ai-insights", icon:"🤖", labelKey:"aiInsights" },
+    { id:"ai-insights",icon:"🔍" , labelKey:"aiInsights" },
     { id:"news", icon:"📰", labelKey:"academicNews" },
     { id:"modules", icon:"🧩", labelKey:"modules" },
     { id:"settings", icon:"⚙", labelKey:"settings" },
