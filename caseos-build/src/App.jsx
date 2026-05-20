@@ -141,7 +141,7 @@ const callClaude = async (systemPrompt, userContent, maxTokens = 800) => {
       model: "llama-3.3-70b-versatile",
       max_tokens: maxTokens,
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: systemPrompt + "\n\nIMPORTANT: Always respond in the same language as the user's question. If the question is in Turkish, respond entirely in Turkish. If in English, respond in English." },
         { role: "user", content: userContent }
       ]
     }),
@@ -1843,14 +1843,13 @@ function AIInsightsPage({ user }) {
   const askAI = async () => {
     if (!query.trim() || loading) return;
     setLoading(true); setResult(null);
-    const systemPrompt = "You are CaseOS AI, an expert academic research assistant. Always respond in this exact JSON format with no markdown or backticks: {\"ozet\": \"2-3 sentence summary\", \"ana_bulgular\": [\"finding 1\", \"finding 2\"], \"analiz\": \"detailed analysis\", \"kaynaklar\": [\"Author (Year). Title.\"]}";
-    try {
+    const systemPrompt = "You are CaseOS AI, an expert academic research assistant. You MUST respond ONLY with a valid JSON object, no markdown, no backticks, no explanation outside JSON. Use this exact format: {\"ozet\": \"2-3 sentence summary\", \"ana_bulgular\": [\"finding 1\", \"finding 2\", \"finding 3\"], \"analiz\": \"detailed analysis paragraph\", \"kaynaklar\": [\"Author (Year). Title. Journal.\"]}";
       const r = await callClaude(systemPrompt, query, 800);
       try { setResult(JSON.parse(r)); } catch { setResult({ ozet: r }); }
-    } catch { setResult({ ozet: "Error. Please try again." }); }
+     { setResult({ ozet: "Error. Please try again." }); }
     setLoading(false);
   };
-
+}
   return (
     <div>
       <div className="sec-title">CaseOS Search</div>
@@ -1899,7 +1898,7 @@ function AIInsightsPage({ user }) {
       )}
     </div>
   );
-}
+
   
 function SettingsPage({ user, onUpdate }) {
   const [name, setName] = useState(user?.full_name || "");
