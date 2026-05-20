@@ -18,7 +18,7 @@ const supabaseFetch = async (endpoint, options = {}) => {
 
  const fetchCases = (email) => supabaseFetch(`cases?select=*&order=created_at.desc${email ? `&user_email=eq.${email}` : ""}`);
 const addCase = (data) => supabaseFetch("cases", { method: "POST", body: JSON.stringify(data) });
-const GEMINI_KEY = import.meta.env.VITE_GROQ_KEY || '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';
+const GEMINI_KEY = import.meta.env.VITE_GROQ_KEY || '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';
 // ═══════════════════════════════════════════════════════════════════════════════
 // i18n SYSTEM (unchanged from previous)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1830,10 +1830,11 @@ function AIInsightsPage({ user }) {
   const askAI = async () => {
     if (!query.trim() || loading) return;
     setLoading(true); setResult(null);
+    const systemPrompt = "You are CaseOS AI, an expert academic research assistant. Always respond in this exact JSON format with no markdown or backticks: {\"ozet\": \"2-3 sentence summary\", \"ana_bulgular\": [\"finding 1\", \"finding 2\"], \"analiz\": \"detailed analysis\", \"kaynaklar\": [\"Author (Year). Title.\"], \"arastirma_bosluklari\": [\"gap 1\"], \"sonraki_adim\": \"next step\"}";
     try {
-      const r = await callClaude("You are CaseOS AI, an expert academic research assistant. Give helpful, detailed answers about academic research, forensic anthropology, isotope analysis, and related fields.", query, 600);
-      setResult(r);
-    } catch { setResult("Error. Please try again."); }
+      const r = await callClaude(systemPrompt, query, 800);
+      try { setResult(JSON.parse(r)); } catch { setResult({ ozet: r }); }
+    } catch { setResult({ ozet: "Error. Please try again." }); }
     setLoading(false);
   };
 
@@ -1848,13 +1849,57 @@ function AIInsightsPage({ user }) {
         </button>
       </div>
       {result && (
-        <div style={{background:"#f8fafc",borderRadius:12,padding:20,fontSize:13,lineHeight:1.8,color:"var(--navy)"}}>
-          {result}
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          {result.ozet && (
+            <div style={{background:"#f0f9ff",borderRadius:12,padding:16,borderLeft:"4px solid #2563eb"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"#2563eb",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>📋 Özet</div>
+              <div style={{fontSize:13,color:"var(--navy)",lineHeight:1.7}}>{result.ozet}</div>
+            </div>
+          )}
+          {result.ana_bulgular?.length > 0 && (
+            <div style={{background:"white",borderRadius:12,padding:16,border:"1px solid var(--g200)"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"var(--green)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>🔍 Ana Bulgular</div>
+              {result.ana_bulgular.map((b,i)=>(
+                <div key={i} style={{display:"flex",gap:8,padding:"4px 0",fontSize:13,color:"var(--g700)"}}>
+                  <span style={{color:"var(--green)",fontWeight:700}}>{i+1}.</span>{b}
+                </div>
+              ))}
+            </div>
+          )}
+          {result.analiz && (
+            <div style={{background:"white",borderRadius:12,padding:16,border:"1px solid var(--g200)"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"var(--navy)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>🔬 Analiz</div>
+              <div style={{fontSize:13,color:"var(--g700)",lineHeight:1.7}}>{result.analiz}</div>
+            </div>
+          )}
+          {result.kaynaklar?.length > 0 && (
+            <div style={{background:"white",borderRadius:12,padding:16,border:"1px solid var(--g200)"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"var(--amber)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>📚 Kaynaklar</div>
+              {result.kaynaklar.map((k,i)=>(
+                <div key={i} style={{fontSize:12,color:"var(--g700)",padding:"3px 0",borderBottom:"1px solid var(--g100)"}}>• {k}</div>
+              ))}
+            </div>
+          )}
+          {result.arastirma_bosluklari?.length > 0 && (
+            <div style={{background:"#fffbeb",borderRadius:12,padding:16,borderLeft:"4px solid var(--amber)"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"var(--amber)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>⚠ Araştırma Boşlukları</div>
+              {result.arastirma_bosluklari.map((b,i)=>(
+                <div key={i} style={{fontSize:13,color:"var(--g700)",padding:"3px 0"}}>• {b}</div>
+              ))}
+            </div>
+          )}
+          {result.sonraki_adim && (
+            <div style={{background:"var(--green-p)",borderRadius:12,padding:16,borderLeft:"4px solid var(--green)"}}>
+              <div style={{fontSize:10,fontWeight:700,color:"var(--green)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>✅ Sonraki Adım</div>
+              <div style={{fontSize:13,color:"var(--navy)",lineHeight:1.7}}>{result.sonraki_adim}</div>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
+  
 function SettingsPage({ user, onUpdate }) {
   const [name, setName] = useState(user?.full_name || "");
   const [university, setUniversity] = useState(user?.university || "");
