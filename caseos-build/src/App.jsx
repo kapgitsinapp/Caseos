@@ -2015,8 +2015,9 @@ export default function App() {
   const navItems = [
     { id:"dashboard", icon:"◈", labelKey:"dashboard" },
     { id:"cases", icon:"📁", labelKey:"cases", badge:CASES.filter(c=>c.status==="open").length },
-    { id:"activities", icon:"⚡", labelKey:"activities" },
-    { id:"workspaces", icon:"🗂", labelKey:"workspaces" },
+
+    
+    
     { id:"classroom", icon:"🎓", labelKey:"classroom" },
     { id:"analytics", icon:"📊", labelKey:"analytics" },
     { id:"ai-insights",icon:"🔍" , labelKey:"aiInsights" },
@@ -2070,15 +2071,7 @@ const handleNav = (id) => {
                 </button>
               ))}
             </div>
-            <div className="sb-sec" style={{ marginTop:8 }}>
-              <div className="sb-sec-lbl">{t("workspaces")}</div>
-              {WORKSPACES.slice(0,4).map(w=>(
-                <button key={w.id} className="nav-btn" onClick={()=>handleNav("workspaces")}>
-                  <span className="ni">{w.icon}</span>
-                  <span style={{ overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",fontSize:12 }}>{w.name}</span>
-                </button>
-              ))}
-            </div>
+            
             <div className="lang-switcher">
              <button className={`lang-btn${lang==="en"?" active":""}`} onClick={()=>{setLang("en");localStorage.setItem("caseos_lang","en")}}>🇬🇧 EN</button>
 <button className={`lang-btn${lang==="tr"?" active":""}`} onClick={()=>{setLang("tr");localStorage.setItem("caseos_lang","tr")}}>🇹🇷 TR</button>
@@ -2112,8 +2105,8 @@ const handleNav = (id) => {
             <div className="content" style={{opacity: animating ? 0 : 1, transform: animating ? 'translateY(8px)' : 'translateY(0)', transition: 'opacity 0.2s ease, transform 0.2s ease'}}>
               {page==="dashboard"&&<DashboardPage onSelect={handleSelect} user={user}/>}
               {page==="cases"&&<CasesPage onSelect={handleSelect} user={user}/>}
-              {page==="activities"&&<ActivitiesPage/>}
-              {page==="workspaces"&&<WorkspacesPage/>}
+              
+             
               {page==="classroom"&&<ClassroomPage user={user}/>}
               {page==="analytics"&&<AnalyticsPage/>}
               {page==="news"&&<NewsPage user={user}/>}
