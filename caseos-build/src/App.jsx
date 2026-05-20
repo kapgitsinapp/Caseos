@@ -35,7 +35,7 @@ const TRANSLATIONS = {
     viewAll:"View all →",recentActivity:"Recent Activity",
     heatmapTitle:"Researcher Activity Heatmap",thisSemester:"This semester",
     activeWorkspaces:"Active Workspaces",casesTitle:"Cases",
-    casesSub:"All research cases across workspaces",filterAll:"All",filterOpen:"Open",
+    casesSub:"All research cases across workspaces",filterAll:"All",detectFields:" Detect Fields", detecting:"⏳ Analyzing…", suggestedFields:"Suggested fields:",filterOpen:"Open",
     filterReview:"In Review",filterClosed:"Closed",statusOpen:"Open",
     statusReview:"In Review",statusClosed:"Closed",backToCases:"← Back to Cases",
     tabOverview:"Overview",tabNotes:"Notes",tabBone:"🦴 Bone Analysis",
@@ -85,7 +85,7 @@ const TRANSLATIONS = {
     viewAll:"Tümünü gör →",recentActivity:"Son Aktiviteler",
     heatmapTitle:"Araştırmacı Aktivite Haritası",thisSemester:"Bu dönem",
     activeWorkspaces:"Aktif Çalışma Alanları",casesTitle:"Vakalar",
-    casesSub:"Tüm çalışma alanlarındaki araştırma vakaları",filterAll:"Tümü",filterOpen:"Açık",
+    casesSub:"Tüm çalışma alanlarındaki araştırma vakaları",filterAll:"Tümü",detectFields:"AI Alan Taraması", detecting:"⏳ Analiz ediliyor…", suggestedFields:"Önerilen alanlar:",filterOpen:"Açık",
     filterReview:"İncelemede",filterClosed:"Kapalı",statusOpen:"Açık",
     statusReview:"İncelemede",statusClosed:"Kapalı",backToCases:"← Vakalara Dön",
     tabOverview:"Genel Bakış",tabNotes:"Notlar",tabBone:"🦴 Kemik Analizi",
@@ -1421,75 +1421,56 @@ const changeTab = (id) => { setTabAnimating(true); setTimeout(() => { setTab(id)
 // ═══════════════════════════════════════════════════════════════════════════════
 function DashboardPage({ onSelect, user }) {
   const { t } = useLang();
-  const userCases = CASES.filter(c => !user.faculty || c.faculty === user.faculty || true);
+  const [cases, setCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCases(user?.email).then(data => {
+      if (Array.isArray(data)) setCases(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const open = cases.filter(c=>c.status==="open").length;
+  const inReview = cases.filter(c=>c.status==="in-review").length;
+  const closed = cases.filter(c=>c.status==="closed").length;
+
   return (
     <div>
       <div className="sec-title">{t("dashTitle")}</div>
-      <div className="sec-sub">{t("dashSub")} · Welcome, {user.name} ({user.role})</div>
+      <div className="sec-sub">{t("dashSub")} · {user.full_name || user.email}</div>
       <div className="stats-grid">
         {[
-          { ico:"📂", lbl:t("totalCases"), val:CASES.length, sub:t("acrossAllWs") },
-          { ico:"🔓", lbl:t("open"), val:CASES.filter(c=>c.status==="open").length, sub:t("activeResearch") },
-          { ico:"🔍", lbl:t("inReview"), val:CASES.filter(c=>c.status==="in-review").length, sub:t("underReview") },
-          { ico:"✅", lbl:t("closed"), val:CASES.filter(c=>c.status==="closed").length, sub:t("completed") },
+          { ico:"📂", lbl:t("totalCases"), val:cases.length, sub:t("acrossAllWs") },
+          { ico:"🔓", lbl:t("open"), val:open, sub:t("activeResearch") },
+          { ico:"🔍", lbl:t("inReview"), val:inReview, sub:t("underReview") },
+          { ico:"✅", lbl:t("closed"), val:closed, sub:t("completed") },
         ].map(s=>(
-          <div key={s.lbl} className="stat-c"><div className="stat-ico">{s.ico}</div><div className="stat-lbl">{s.lbl}</div><div className="stat-val">{s.val}</div><div className="stat-sub">{s.sub}</div></div>
+          <div key={s.lbl} className="stat-c">
+            <div className="stat-ico">{s.ico}</div>
+            <div className="stat-lbl">{s.lbl}</div>
+            <div className="stat-val">{loading ? "…" : s.val}</div>
+            <div className="stat-sub">{s.sub}</div>
+          </div>
         ))}
       </div>
-      {/* Role-specific widget */}
-      {(user.role==="Faculty" || user.role==="Lab Researcher") && (
-        <div className="card" style={{ marginBottom:18,padding:"14px 18px" }}>
-          <div style={{ display:"flex",alignItems:"center",gap:10,marginBottom:8 }}>
-            <span style={{ fontSize:16 }}>👩‍🏫</span>
-            <span style={{ fontWeight:700,fontSize:13.5,color:"var(--navy)" }}>Faculty Quick Actions</span>
-          </div>
-          <div style={{ display:"flex",gap:10,flexWrap:"wrap" }}>
-            {["Create New Case","Generate Class Report","Export Data","Send AI Summary"].map(a=>(
-              <button key={a} className="tbtn tbtn-navy" style={{ fontSize:12 }}>{a}</button>
-            ))}
-          </div>
-        </div>
-      )}
-      {user.role==="Student" && (
-        <div className="card" style={{ marginBottom:18,padding:"14px 18px",background:"linear-gradient(135deg,#f0f9ff,#e8f5ee)",border:"1px solid #bfdbfe" }}>
-          <div style={{ fontWeight:700,fontSize:13,color:"var(--navy)",marginBottom:6 }}>🎓 My Assignments</div>
-          <div style={{ fontSize:12.5,color:"var(--g700)" }}>2 pending assignments · Next due: Bone Analysis Report (Apr 20)</div>
-        </div>
-      )}
-      <div className="dash-wide">
-        <div className="card">
-          <div className="card-hd"><span className="card-t">{t("recentCases")}</span><span className="card-lk">{t("viewAll")}</span></div>
-          <div style={{ padding:"4px 0" }}>
-            {CASES.slice(0,4).map(c=>(
-              <div key={c.id} onClick={()=>onSelect(c)} style={{ display:"flex",alignItems:"center",gap:12,padding:"10px 18px",cursor:"pointer",borderBottom:"1px solid var(--g100)",transition:"background .13s" }}
-                onMouseEnter={e=>e.currentTarget.style.background="var(--g50)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
-                <div style={{ flex:1,minWidth:0 }}>
-                  <div style={{ fontSize:13,fontWeight:600,color:"var(--navy)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis" }}>{c.title}</div>
-                  <div style={{ fontSize:11,color:"var(--g600)",marginTop:1 }}>{c.field}</div>
-                </div>
-                <StatusPill status={c.status}/><ProgressBar pct={c.progress}/>
+      <div className="card">
+        <div className="card-hd"><span className="card-t">{t("recentCases")}</span><span className="card-lk" onClick={()=>{}}>{t("viewAll")}</span></div>
+        <div style={{padding:"4px 0"}}>
+          {loading ? (
+            <div className="empty">Loading…</div>
+          ) : cases.length === 0 ? (
+            <div className="empty">No cases yet</div>
+          ) : cases.slice(0,5).map(c=>(
+            <div key={c.id} onClick={()=>onSelect(c)} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 18px",cursor:"pointer",borderBottom:"1px solid var(--g100)",transition:"background .13s"}}
+              onMouseEnter={e=>e.currentTarget.style.background="var(--g50)"} onMouseLeave={e=>e.currentTarget.style.background=""}>
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{fontSize:13,fontWeight:600,color:"var(--navy)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{c.title}</div>
+                <div style={{fontSize:11,color:"var(--g600)",marginTop:1}}>{c.field || c.description?.substring(0,40)}</div>
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="card">
-          <div className="card-hd"><span className="card-t">{t("recentActivity")}</span></div>
-          <div style={{ padding:"4px 18px" }}>
-            {ACTIVITIES.map((a,i)=>(
-              <div key={i} className="activity-item"><div className="a-dot"/><div><div className="a-txt">{a.text}</div><div className="a-time">{a.time}</div></div></div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="dash-grid">
-        <div className="card"><div className="card-hd"><span className="card-t">{t("heatmapTitle")}</span><span className="card-lk">{t("thisSemester")}</span></div><div style={{ padding:"14px 18px" }}><Heatmap/></div></div>
-        <div className="card"><div className="card-hd"><span className="card-t">{t("activeWorkspaces")}</span></div>
-          <div style={{ padding:"4px 0" }}>{WORKSPACES.slice(0,4).map(w=>(
-            <div key={w.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"9px 18px",borderBottom:"1px solid var(--g100)" }}>
-              <span style={{ fontSize:16 }}>{w.icon}</span>
-              <div style={{ flex:1 }}><div style={{ fontSize:12.5,fontWeight:600,color:"var(--navy)" }}>{w.name}</div><div style={{ fontSize:11,color:"var(--g400)" }}>{w.cases} {t("casesSuffix")} · {w.members} {t("membersSuffix")}</div></div>
+              <StatusPill status={c.status}/>
             </div>
-          ))}</div>
+          ))}
         </div>
       </div>
     </div>
@@ -1503,6 +1484,9 @@ const [loading, setLoading] = useState(true);
 const [showAdd, setShowAdd] = useState(false);
 const [newTitle, setNewTitle] = useState("");
 const [newDesc, setNewDesc] = useState("");
+const [suggestedFields, setSuggestedFields] = useState([]);
+const [selectedFields, setSelectedFields] = useState([]);
+const [analyzing, setAnalyzing] = useState(false);
 
 useEffect(() => {
   fetchCases(user?.email).then(data => {
@@ -1529,16 +1513,45 @@ useEffect(() => {
         </select>
         <button className="tbtn tbtn-green" style={{ marginLeft:"auto" }} onClick={()=>setShowAdd(true)}>{t("newCase")}</button>
       </div>
-      {showAdd && (
+   {showAdd && (
   <div style={{background:"#1e293b",padding:"20px",borderRadius:"12px",marginBottom:"16px"}}>
     <input placeholder="Case title" value={newTitle} onChange={e=>setNewTitle(e.target.value)} style={{width:"100%",padding:"8px",marginBottom:"8px",borderRadius:"6px",border:"1px solid #334155",background:"#0f172a",color:"white"}}/>
     <input placeholder="Description" value={newDesc} onChange={e=>setNewDesc(e.target.value)} style={{width:"100%",padding:"8px",marginBottom:"8px",borderRadius:"6px",border:"1px solid #334155",background:"#0f172a",color:"white"}}/>
     <button onClick={async()=>{
-      await addCase({title:newTitle, description:newDesc, status:"open", user_email: user?.email || "anonymous"});
-      setNewTitle(""); setNewDesc(""); setShowAdd(false);
+      if(!newTitle||!newDesc) return;
+      setAnalyzing(true);
+      try {
+        const r = await callClaude("Return only a JSON array of 3-5 relevant academic fields. Example: [\"Forensic Anthropology\",\"Osteology\"]. No other text.", `Title: ${newTitle}\nDescription: ${newDesc}`, 200);
+        const fields = JSON.parse(r);
+        setSuggestedFields(fields);
+        setSelectedFields(fields);
+      } catch { setSuggestedFields([]); }
+      setAnalyzing(false);
+    }} className="tbtn tbtn-navy" style={{marginBottom:"8px",display:"block"}} disabled={analyzing}>
+     {analyzing ? t("detecting") : t("detectFields")}
+    </button>
+    {suggestedFields.length > 0 && (
+      <div style={{marginBottom:"8px"}}>
+        <div style={{fontSize:11,color:"#94a3b8",marginBottom:6}}>{t("suggestedFields")}</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {suggestedFields.map((f,i)=>(
+            <span key={i} onClick={()=>setSelectedFields(sf=>sf.includes(f)?sf.filter(x=>x!==f):[...sf,f])}
+              style={{padding:"4px 10px",borderRadius:20,fontSize:12,cursor:"pointer",
+                background:selectedFields.includes(f)?"#4f46e5":"#1e293b",
+                color:selectedFields.includes(f)?"white":"#94a3b8",
+                border:`1px solid ${selectedFields.includes(f)?"#4f46e5":"#334155"}`}}>
+              {f}
+            </span>
+          ))}
+        </div>
+      </div>
+    )}
+    <button onClick={async()=>{
+      await addCase({title:newTitle, description:newDesc, status:"open", user_email: user?.email || "anonymous", field: selectedFields.join(", ")});
+      setNewTitle(""); setNewDesc(""); setShowAdd(false); setSuggestedFields([]); setSelectedFields([]);
       fetchCases(user?.email).then(data=>{ if(Array.isArray(data)) setCases(data); });
     }} className="tbtn tbtn-green">Save</button>
-    <button onClick={()=>setShowAdd(false)} style={{marginLeft:"8px"}} className="tbtn">Cancel</button>
+    <button onClick={()=>{setShowAdd(false);setSuggestedFields([]);setSelectedFields([]);}} style={{marginLeft:"8px"}} className="tbtn">Cancel</button>
   </div>
 )}
       {filtered.map(c=>(
