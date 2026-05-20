@@ -138,7 +138,7 @@ const callClaude = async (systemPrompt, userContent, maxTokens = 800) => {
       "Authorization": `Bearer ${GEMINI_KEY}`
     },
     body: JSON.stringify({
-      model: "llama-3.1-8b-instant",
+      model: "llama-3.3-70b-versatile",
       max_tokens: maxTokens,
       messages: [
         { role: "system", content: systemPrompt },
@@ -1843,7 +1843,7 @@ function AIInsightsPage({ user }) {
   const askAI = async () => {
     if (!query.trim() || loading) return;
     setLoading(true); setResult(null);
-    const systemPrompt = "You are CaseOS AI, an expert academic research assistant. Always respond in this exact JSON format with no markdown or backticks: {\"ozet\": \"2-3 sentence summary\", \"ana_bulgular\": [\"finding 1\", \"finding 2\"], \"analiz\": \"detailed analysis\", \"kaynaklar\": [\"Author (Year). Title.\"], \"arastirma_bosluklari\": [\"gap 1\"], \"sonraki_adim\": \"next step\"}";
+    const systemPrompt = "You are CaseOS AI, an expert academic research assistant. Always respond in this exact JSON format with no markdown or backticks: {\"ozet\": \"2-3 sentence summary\", \"ana_bulgular\": [\"finding 1\", \"finding 2\"], \"analiz\": \"detailed analysis\", \"kaynaklar\": [\"Author (Year). Title.\"]}";
     try {
       const r = await callClaude(systemPrompt, query, 800);
       try { setResult(JSON.parse(r)); } catch { setResult({ ozet: r }); }
@@ -1894,12 +1894,7 @@ function AIInsightsPage({ user }) {
             </div>
           )}
          
-          {result.sonraki_adim && (
-            <div style={{background:"var(--green-p)",borderRadius:12,padding:16,borderLeft:"4px solid var(--green)"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"var(--green)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>✅ Sonraki Adım</div>
-              <div style={{fontSize:13,color:"var(--navy)",lineHeight:1.7}}>{result.sonraki_adim}</div>
-            </div>
-          )}
+          
         </div>
       )}
     </div>
