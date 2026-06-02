@@ -777,7 +777,7 @@ function AuthPage({ onLogin }) {
         body: JSON.stringify({ email, full_name: email.split("@")[0], field: faculty })
       });
       const ws = method === "classcode" && CLASS_CODES[classCode] ? CLASS_CODES[classCode].ws : WORKSPACES[0].name;
-      onLogin({ name: email.split("@")[0], role: role || "Faculty", faculty, email, classCode, workspace: ws });
+      onLogin({ name: email.split("@")[0], role: role || "Researcher", faculty, email, classCode });
     } catch(e) {
       setError("Bağlantı hatası. Tekrar deneyin.");
     }
@@ -822,8 +822,8 @@ function AuthPage({ onLogin }) {
               <input className="auth-inp" placeholder="Password" type="password" style={{ marginTop:4 }}
                 onChange={e=>setPassword(e.target.value)} />
               <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-                <button className="auth-btn" style={{ flex:1, background:"#1e3a5f" }} onClick={()=>{ setMethod(m=>m); setStep("role"); }}>Login →</button>
-                <button className="auth-btn" style={{ flex:1 }} onClick={()=>{ setMethod("register"); setStep("role"); }}>Register →</button>
+                <button className="auth-btn" style={{ flex:1, background:"#1e3a5f" }} onClick={()=>{ setMethod(m=>m); setStep("faculty"); }}>Login →</button>
+                <button className="auth-btn" style={{ flex:1 }} onClick={()=>{ setMethod("register"); setStep("faculty"); }}>Register →</button>
               </div>
               <button style={{ width:"100%",padding:8,background:"none",border:"none",color:"var(--g400)",fontSize:12,cursor:"pointer" }} onClick={()=>setStep("method")}>← Back</button>
             </>
@@ -845,7 +845,7 @@ function AuthPage({ onLogin }) {
             <>
               <div className="auth-step">Step 3 · Your Role</div>
               <div className="role-grid">
-                {ROLES.map(r => (
+                {["Researcher", "Student", "Academic"].map(r => (
                   <div key={r} className={`role-btn${role===r?" selected":""}`} onClick={()=>setRole(r)}>
                     <div className="role-btn-icon">{roleIcons[r]}</div>
                     <div className="role-btn-lbl">{r}</div>
@@ -856,20 +856,21 @@ function AuthPage({ onLogin }) {
               <button style={{ width:"100%",padding:8,background:"none",border:"none",color:"var(--g400)",fontSize:12,cursor:"pointer",marginTop:6 }} onClick={()=>setStep(method==="classcode"?"code":"email")}>← Back</button>
             </>
           )}
-          {step === "faculty" && (
+          
+
+ 
+        {step === "faculty" && (
             <>
-              <div className="auth-step">Almost done · Select Your Faculty</div>
-              <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:7,marginBottom:16 }}>
-                {FACULTIES_LIST.map(f => (
-                  <div key={f} className={`auth-option${faculty===f?" selected":""}`} style={{ padding:"10px 12px",marginBottom:0 }} onClick={()=>setFaculty(f)}>
-                    <div style={{ fontSize:12.5,fontWeight:600,color:"var(--navy)" }}>{f}</div>
-                    {faculty===f && <span style={{ marginLeft:"auto",color:"#2a7a50",fontSize:14 }}>✓</span>}
-                  </div>
-                ))}
-              </div>
+              <div className="auth-step">Son adım · Bölüm / Alan</div>
+              <div style={{display:"flex",gap:8,marginBottom:12}}>
+  {["🎓 Student","🔬 Researcher","👩‍🏫 Academic"].map(r=>(
+    <button key={r} onClick={()=>setRole(r.split(" ")[1])} style={{flex:1,padding:"8px",border:`1.5px solid ${role===r.split(" ")[1]?"var(--navy)":"var(--g200)"}`,borderRadius:8,background:role===r.split(" ")[1]?"var(--navy)":"white",color:role===r.split(" ")[1]?"white":"var(--g600)",fontWeight:600,fontSize:11,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>{r}</button>
+  ))}
+</div>
+              <input className="auth-inp" placeholder="Bölüm veya araştırma alanınız (örn: Forensik Antropoloji, Tıp, Biyoloji...)" value={faculty||""} onChange={e=>setFaculty(e.target.value)}/>
               {error && <div style={{ color:"#e11d48",fontSize:12,marginBottom:8 }}>{error}</div>}
               <button className="auth-btn green" onClick={handleDone} disabled={!faculty||loading}>
-                {loading ? "⏳ Loading..." : "Enter CaseOS →"}
+                {loading ? "⏳ Yükleniyor..." : "CaseOS'a Gir →"}
               </button>
             </>
           )}
@@ -1849,7 +1850,7 @@ function AIInsightsPage({ user }) {
      { setResult({ ozet: "Error. Please try again." }); }
     setLoading(false);
   };
-}
+
   return (
     <div>
       <div className="sec-title">CaseOS Search</div>
@@ -1898,7 +1899,7 @@ function AIInsightsPage({ user }) {
       )}
     </div>
   );
-
+}
   
 function SettingsPage({ user, onUpdate }) {
   const [name, setName] = useState(user?.full_name || "");
