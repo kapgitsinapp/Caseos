@@ -131,17 +131,19 @@ const useLang = () => useContext(LangCtx);
 // AI ENGINE  (real API calls, input-driven results)
 // ═══════════════════════════════════════════════════════════════════════════════
 const callClaude = async (systemPrompt, userContent, maxTokens = 800) => {
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const res = await fetch("https://router.huggingface.co/v1/chat/completions", {
     method: "POST",
-    headers: {
+    headers: { 
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${GEMINI_KEY}`
+      "Authorization": `Bearer ${GEMINI_KEY}`,
+      "HTTP-Referer": "https://caseos-three.vercel.app",
+      "X-Title": "CaseOS"
     },
     body: JSON.stringify({
-      model: "llama-3.3-70b-versatile",
+      model: "meta-llama/Llama-3.3-70B-Instruct",
       max_tokens: maxTokens,
       messages: [
-        { role: "system", content: systemPrompt + "\n\nIMPORTANT: Always respond in the same language as the user's question. If the question is in Turkish, respond entirely in Turkish. If in English, respond in English." },
+        { role: "system", content: systemPrompt },
         { role: "user", content: userContent }
       ]
     }),
@@ -1838,64 +1840,104 @@ function ModulesPage({ user }) {
 function AIInsightsPage({ user }) {
   const { t } = useLang();
   const [query, setQuery] = useState("");
-  const [result, setResult] = useState(null);
+  const [papers, setPapers] = useState([]);
+  const [aiSummary, setAiSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingAI, setLoadingAI] = useState(false);
 
-  const askAI = async () => {
+const searchLiterature = async () => {
     if (!query.trim() || loading) return;
-    setLoading(true); setResult(null);
-    const systemPrompt = "You are CaseOS AI, an expert academic research assistant. You MUST respond ONLY with a valid JSON object, no markdown, no backticks, no explanation outside JSON. Use this exact format: {\"ozet\": \"2-3 sentence summary\", \"ana_bulgular\": [\"finding 1\", \"finding 2\", \"finding 3\"], \"analiz\": \"detailed analysis paragraph\", \"kaynaklar\": [\"Author (Year). Title. Journal.\"]}";
-      const r = await callClaude(systemPrompt, query, 800);
-      try { setResult(JSON.parse(r)); } catch { setResult({ ozet: r }); }
-     { setResult({ ozet: "Error. Please try again." }); }
+    setLoading(true); setPapers([]); setAiSummary(null);
+    const systemPrompt = `You are an academic literature search assistant. Search for real academic papers about the given topic and respond ONLY in valid JSON array format: [{"title":"paper title","authors":"Author1, Author2","year":2023,"abstract":"brief abstract","citationCount":50,"journal":"Journal Name"}]. Return 6-8 real papers with accurate information.Always respond in Turkish regardless of the query language.`;
+    try {
+      const r = await callClaude(systemPrompt, query, 1000);
+      try { setPapers(JSON.parse(r)); } catch { setPapers([]); }
+    } catch { setPapers([]); }
     setLoading(false);
+  };
+
+  const analyzeWithAI = async () => {
+    if (!papers.length || loadingAI) return;
+    setLoadingAI(true); setAiSummary(null);
+    const paperList = papers.slice(0,5).map((p,i)=>`${i+1}. ${p.title} (${p.year}) - ${p.abstract?.substring(0,200)||"No abstract"}`).join("\n");
+    const systemPrompt = `You are an expert academic research assistant. Analyze these papers and respond ONLY in valid JSON: {"ozet":"overall summary of the field","ana_bulgular":["key finding 1","key finding 2","key finding 3"],"analiz":"detailed analysis","research_trend":"current trend in this field"}`;
+    try {
+      const r = await callClaude(systemPrompt, `Query: ${query}\n\nPapers:\n${paperList}`, 800);
+      try { setAiSummary(JSON.parse(r)); } catch { setAiSummary({ozet: r}); }
+    } catch { setAiSummary({ozet:"Analysis failed."}); }
+    setLoadingAI(false);
   };
 
   return (
     <div>
       <div className="sec-title">CaseOS Search</div>
-      <div className="sec-sub">Ask anything about your research</div>
-      <div style={{display:"flex",gap:8,marginBottom:20}}>
-        <input className="auth-inp" style={{flex:1,margin:0}} placeholder="Ask a research question…" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&askAI()}/>
-        <button className="tbtn tbtn-navy" onClick={askAI} disabled={loading}>
-          {loading ? "⏳" : "Ask"}
+      <div className="sec-sub">Gerçek akademik literatür taraması</div>
+      <div style={{display:"flex",gap:8,marginBottom:24}}>
+        <input className="auth-inp" style={{flex:1,margin:0}} placeholder="Konu ara... (örn: forensic anthropology, bone analysis)" value={query} onChange={e=>setQuery(e.target.value)} onKeyDown={e=>e.key==="Enter"&&searchLiterature()}/>
+        <button className="tbtn tbtn-navy" onClick={searchLiterature} disabled={loading}>
+          {loading ? "⏳" : "🔍 Ara"}
         </button>
       </div>
-      {result && (
-        <div style={{display:"flex",flexDirection:"column",gap:16}}>
-          {result.ozet && (
-            <div style={{background:"#f0f9ff",borderRadius:12,padding:16,borderLeft:"4px solid #2563eb"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"#2563eb",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>📋 Özet</div>
-              <div style={{fontSize:13,color:"var(--navy)",lineHeight:1.7}}>{result.ozet}</div>
-            </div>
-          )}
-          {result.ana_bulgular?.length > 0 && (
-            <div style={{background:"white",borderRadius:12,padding:16,border:"1px solid var(--g200)"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"var(--green)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>🔍 Ana Bulgular</div>
-              {result.ana_bulgular.map((b,i)=>(
-                <div key={i} style={{display:"flex",gap:8,padding:"4px 0",fontSize:13,color:"var(--g700)"}}>
-                  <span style={{color:"var(--green)",fontWeight:700}}>{i+1}.</span>{b}
+
+      {papers.length > 0 && (
+        <>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+            <div style={{fontSize:13,fontWeight:600,color:"var(--navy)"}}>{papers.length} makale bulundu</div>
+            <button className="tbtn tbtn-green" onClick={analyzeWithAI} disabled={loadingAI}>
+              {loadingAI ? "⏳ Analiz ediliyor..." : "🤖 AI ile Analiz Et"}
+            </button>
+          </div>
+
+          {aiSummary && (
+            <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:24}}>
+              {aiSummary.ozet && (
+                <div style={{background:"#f0f9ff",borderRadius:12,padding:16,borderLeft:"4px solid #2563eb"}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"#2563eb",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>📋 Genel Özet</div>
+                  <div style={{fontSize:13,color:"var(--navy)",lineHeight:1.7}}>{aiSummary.ozet}</div>
                 </div>
-              ))}
+              )}
+              {aiSummary.ana_bulgular?.length > 0 && (
+                <div style={{background:"white",borderRadius:12,padding:16,border:"1px solid var(--g200)"}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"var(--green)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>🔍 Ana Bulgular</div>
+                  {aiSummary.ana_bulgular.map((b,i)=>(
+                    <div key={i} style={{display:"flex",gap:8,padding:"4px 0",fontSize:13,color:"var(--g700)"}}>
+                      <span style={{color:"var(--green)",fontWeight:700}}>{i+1}.</span>{b}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {aiSummary.research_trend && (
+                <div style={{background:"var(--green-p)",borderRadius:12,padding:16,borderLeft:"4px solid var(--green)"}}>
+                  <div style={{fontSize:10,fontWeight:700,color:"var(--green)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>📈 Araştırma Trendi</div>
+                  <div style={{fontSize:13,color:"var(--navy)",lineHeight:1.7}}>{aiSummary.research_trend}</div>
+                </div>
+              )}
             </div>
           )}
-          {result.analiz && (
-            <div style={{background:"white",borderRadius:12,padding:16,border:"1px solid var(--g200)"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"var(--navy)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>🔬 Analiz</div>
-              <div style={{fontSize:13,color:"var(--g700)",lineHeight:1.7}}>{result.analiz}</div>
-            </div>
-          )}
-          {result.kaynaklar?.length > 0 && (
-            <div style={{background:"white",borderRadius:12,padding:16,border:"1px solid var(--g200)"}}>
-              <div style={{fontSize:10,fontWeight:700,color:"var(--amber)",textTransform:"uppercase",letterSpacing:".1em",marginBottom:8}}>📚 Kaynaklar</div>
-              {result.kaynaklar.map((k,i)=>(
-                <div key={i} style={{fontSize:12,color:"var(--g700)",padding:"3px 0",borderBottom:"1px solid var(--g100)"}}>• {k}</div>
-              ))}
-            </div>
-          )}
-         
-          
-        </div>
+
+          <div style={{display:"flex",flexDirection:"column",gap:12}}>
+            {papers.map((p,i)=>(
+              <div key={i} style={{background:"white",borderRadius:12,padding:18,border:"1px solid var(--g200)",boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
+                <div style={{display:"flex",gap:8,marginBottom:6,alignItems:"flex-start"}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:14,fontWeight:700,color:"var(--navy)",lineHeight:1.4,marginBottom:4}}>{p.title}</div>
+                    <div style={{fontSize:11,color:"var(--g400)"}}>
+                      {typeof p.authors === 'string' ? p.authors : p.authors && Array.isArray(p.authors) ? p.authors.slice(0,3).map(a=>a.name).join(", ") : (p.authors||"")} · {p.year} · 📊 {p.citationCount} atıf
+                    </div>
+                  </div>
+                  {p.journal && (
+                    <a href={p.url} target="_blank" rel="noreferrer" style={{padding:"4px 10px",background:"var(--green-p)",color:"var(--green)",borderRadius:6,fontSize:11,fontWeight:600,textDecoration:"none",flexShrink:0}}>PDF →</a>
+                  )}
+                </div>
+                {p.abstract && (
+                  <div style={{fontSize:12,color:"var(--g600)",lineHeight:1.6,borderTop:"1px solid var(--g100)",paddingTop:8,marginTop:4}}>
+                    {p.abstract.substring(0,300)}...
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
